@@ -1,0 +1,2 @@
+float64 duration
+servo_controller_msg/ServoPosition[] position
