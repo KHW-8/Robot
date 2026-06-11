@@ -43,13 +43,23 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add sources to executable
+file(GLOB RECURSIVE USER_SRC
+    "Peripherals/src/*.c"
+)
+
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    ${USER_SRC}
 )
 
 # Add include paths
+set(User_Include_Dirs
+    ${CMAKE_CURRENT_SOURCE_DIR}/Peripherals/Inc
+)
+
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    ${User_Include_Dirs}
 )
 
 # Add project symbols (macros)

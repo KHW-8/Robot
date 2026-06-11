@@ -31,7 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "led.h"
+#include "buzzer.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
