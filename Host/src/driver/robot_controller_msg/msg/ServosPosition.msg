@@ -1,0 +1,2 @@
+float64 duration
+robot_controller_msg/ServoPosition[] position

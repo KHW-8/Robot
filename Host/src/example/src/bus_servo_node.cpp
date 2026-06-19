@@ -4,20 +4,20 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
 // ArmPi
-#include "ros_robot_controller_msgs/msg/servo_position.hpp"
-#include "ros_robot_controller_msgs/msg/servos_position.hpp"
+#include "robot_controller_msg/msg/servo_position.hpp"
+#include "robot_controller_msg/msg/servos_position.hpp"
 
 using namespace std::chrono_literals;
 
-class ServoController : rclcpp::Node {
+class BusServoNode : rclcpp::Node {
 public:
-    ServoController() 
-        :Node("servo_controller")
+    BusServoNode() 
+        :Node("bus_servo_node")
     {
-        this->pub = this->create_publisher<ros_robot_controller_msgs::msg::ServosPosition>("/ros_robot_controller/bus_servo/set_position", 1);
+        this->pub = this->create_publisher<robot_controller_msg::msg::ServosPosition>("/robot_controller/bus_servo/set_position", 1);
 
         // Waiting for robot arm underlying control services to start
-        this->client = this->create_client<std_srvs::srv::Trigger>("/ros_robot_controller/init_finish");
+        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/init_complete");
         this->client->wait_for_service();
     }
     
@@ -25,18 +25,18 @@ public:
     void set_servo_position(const size_t& duration, std::vector<std::pair<size_t, size_t> > positions);
 
 private:
-    rclcpp::Publisher<ros_robot_controller_msgs::msg::ServosPosition>::SharedPtr pub;
+    rclcpp::Publisher<robot_controller_msg::msg::ServosPosition>::SharedPtr pub;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr client;
 };
 
-void ServoController::set_servo_position(const size_t& duration, 
+void BusServoNode::set_servo_position(const size_t& duration, 
     std::vector<std::pair<size_t, size_t> > positions) 
 {
     // Generate message
-    auto msg = ros_robot_controller_msgs::msg::ServosPosition();
+    auto msg = robot_controller_msg::msg::ServosPosition();
     msg.duration = duration;
     for (const auto& i : positions) {
-        auto position = ros_robot_controller_msgs::msg::ServoPosition();
+        auto position = robot_controller_msg::msg::ServoPosition();
         position.id = i.first;
         position.position = i.second;
 
@@ -54,7 +54,7 @@ void ServoController::set_servo_position(const size_t& duration,
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
 
-    auto servo_controller = std::make_shared<ServoController>();
+    auto servo_controller = std::make_shared<BusServoNode>();
 
     try {
         while (rclcpp::ok()) {
@@ -64,14 +64,13 @@ int main(int argc, char** argv) {
             std::this_thread::sleep_for(1s);                                // Wait 1 sec
         }
     } catch(const rclcpp::exceptions::RCLError& e) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "rclcpp::exceptions::RCLError: %s", e.what());
+        RCLCPP_ERROR(rclcpp::get_logger(""), "%s", e.what());
     } catch(const rclcpp::exceptions::InvalidServiceNameError& e) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "rclcpp::exceptions::InvalidServiceNameError: %s", e.what());
+        RCLCPP_ERROR(rclcpp::get_logger(""), "%s", e.what());
     } catch(...) {
         RCLCPP_ERROR(rclcpp::get_logger(""), "Unknown error.");
     }
 
-    servo_controller.reset();     // Clear node
     rclcpp::shutdown();     // Shutdown 
 
     return 0;

@@ -10,7 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 # ArmPi
-find_package(ros_robot_controller_msgs REQUIRED)
+find_package(robot_controller_msg REQUIRED)
 
 ## Launch files ##
 install(DIRECTORY
@@ -23,21 +23,21 @@ add_executable(bus_servo src/bus_servo_node.cpp)
 ament_target_dependencies(bus_servo 
     rclcpp 
     std_srvs 
-    ros_robot_controller_msgs
+    robot_controller_msg
 )
 
 add_executable(buzzer src/buzzer_node.cpp)
 ament_target_dependencies(buzzer 
     rclcpp 
     std_srvs 
-    ros_robot_controller_msgs
+    robot_controller_msg
 )
 
 add_executable(led src/led_node.cpp)
 ament_target_dependencies(led 
     rclcpp 
     std_srvs 
-    ros_robot_controller_msgs
+    robot_controller_msg
 )
 
 install(TARGETS

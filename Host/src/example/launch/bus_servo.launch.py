@@ -5,11 +5,11 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    ros_robot_controller_launch = IncludeLaunchDescription(
+    robot_controller_launch = IncludeLaunchDescription(
         PathJoinSubstitution([
-            FindPackageShare("ros_robot_controller"),
+            FindPackageShare("robot_controller"),
             "launch",
-            "ros_robot_controller.launch.py"
+            "robot_controller.launch.py"
         ])
     )
 
@@ -20,6 +20,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        ros_robot_controller_launch,
+        robot_controller_launch,
         bus_servo_node
     ])

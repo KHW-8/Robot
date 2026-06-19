@@ -1,34 +1,21 @@
 cmake_minimum_required(VERSION 3.8)
-project(servo_controller)
+project(robot_controller_msg)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-## Find dependencies ##
+# find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_srvs REQUIRED)
-# ArmPi
-find_package(robot_controller_msg REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(std_msgs REQUIRED)
 
-## Launch files ##
-install(DIRECTORY
-    launch
-    DESTINATION share/${PROJECT_NAME}
-)
-
-## Executables ##
-add_executable(bus_servo src/bus_servo_node.cpp)
-ament_target_dependencies(bus_servo 
-    rclcpp 
-    std_srvs 
-    robot_controller_msg
-)
-
-install(TARGETS
-    bus_servo
-    DESTINATION lib/${PROJECT_NAME}
+rosidl_generate_interfaces(${PROJECT_NAME}
+    "msg/LEDState.msg"
+    "msg/BuzzerState.msg"
+    "msg/ServoPosition.msg"
+    "msg/ServosPosition.msg"
+    DEPENDENCIES std_msgs
 )
 
 if(BUILD_TESTING)

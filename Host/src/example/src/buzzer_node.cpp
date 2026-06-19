@@ -4,44 +4,44 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
 // ArmPi
-#include "ros_robot_controller_msgs/msg/buzzer_state.hpp"
+#include "robot_controller_msg/msg/buzzer_state.hpp"
 
 using namespace std::chrono_literals;
 
-class BuzzerController : public rclcpp::Node {
+class BuzzerNode : public rclcpp::Node {
 public: 
-    BuzzerController() 
-        : Node("BuzzerController")
+    BuzzerNode() 
+        : Node("buzzer_node")
     {
-        this->pub = this->create_publisher<ros_robot_controller_msgs::msg::BuzzerState>("/ros_robot_controller/set_buzzer", 1);
+        this->pub = this->create_publisher<robot_controller_msg::msg::BuzzerState>("/robot_controller/buzzer/set", 1);
 
         // Waiting for robot arm underlying control services to start
-        this->client = this->create_client<std_srvs::srv::Trigger>("/ros_robot_controller/init_finish");
+        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/init_complete");
         this->client->wait_for_service();
     }
 
 public:
-    void set_buzzer(double freq, double on_time, double off_time, size_t repeqat) {
-        auto msg = ros_robot_controller_msgs::msg::BuzzerState();
+    void set_buzzer(double freq, double on_duration, double off_duration, size_t repeqat) {
+        auto msg = robot_controller_msg::msg::BuzzerState();
         msg.freq = freq;
-        msg.on_time = on_time;
-        msg.off_time = off_time;
-        msg.repeat = repeqat;
+        msg.on_duration = on_duration;
+        msg.off_duration = off_duration;
+        msg.repeat_count= repeqat;
 
         // Send message
         this->pub->publish(msg);
         RCLCPP_INFO(
             rclcpp::get_logger(""), 
-            "Published Buzzer State: freq=%d, on_time=%.2f, off_time=%.2f, repeat=%d",
+            "Published Buzzer State: freq=%d, on_duration=%.2f, off_duration=%.2f, repeat=%d",
             msg.freq,
-            msg.on_time,
-            msg.on_time,
-            msg.repeat
+            msg.on_duration,
+            msg.off_duration,
+            msg.repeat_count
         );
     }
 
 private:
-    rclcpp::Publisher<ros_robot_controller_msgs::msg::BuzzerState>::SharedPtr pub;
+    rclcpp::Publisher<robot_controller_msg::msg::BuzzerState>::SharedPtr pub;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr client;
 };
 
@@ -49,10 +49,9 @@ int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
 
     // Send buzzer state
-    auto controller = std::make_shared<BuzzerController>();
+    auto controller = std::make_shared<BuzzerNode>();
     std::this_thread::sleep_for(5s);
     controller->set_buzzer(1500, 0.1, 0.5, 10);
-    controller.reset(); // Clear node
 
     rclcpp::shutdown(); // Shutdown
 

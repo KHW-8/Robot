@@ -7,9 +7,9 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     arm_controller_launch = IncludeLaunchDescription(
         PathJoinSubstitution([
-            FindPackageShare("ros_robot_controller"),
+            FindPackageShare("robot_controller"),
             "launch",
-            "ros_robot_controller.launch.py"
+            "robot_controller.launch.py"
         ])
     )
 
