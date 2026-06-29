@@ -46,6 +46,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 file(GLOB_RECURSE User_Srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/User/Communication/Src/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/User/Peripherals/Src/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Host/Src/*.c
 )
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
@@ -58,6 +59,7 @@ set(User_Include_Dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/User/
     ${CMAKE_CURRENT_SOURCE_DIR}/User/Communication/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/User/Peripherals/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Host/Inc
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE

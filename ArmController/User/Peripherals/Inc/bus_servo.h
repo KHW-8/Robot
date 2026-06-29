@@ -51,6 +51,7 @@ typedef struct {
     // Receive
     BusServoPacket rx_packet;
     BusServoPacketRecvState rx_state;
+    uint8_t rx_buf;
     bool rx_finished;
     uint8_t param_index;
 
@@ -61,7 +62,6 @@ typedef struct {
 
 BusServoPacket createBusServoPacket(uint8_t servo_id, uint8_t cmd, uint8_t param1, uint8_t param2, uint8_t param3, uint8_t param4, uint8_t paramNum);
 void setChksum(BusServoPacket *packet);
-bool bus_servo_packet_handler(uint8_t rx_buf);
 
 // Transmit/Receive packet
 int transmit_packet_to_bus_servo(BusServoPacket *packet);
@@ -79,6 +79,6 @@ void set_bus_servo_pos(uint32_t id, int16_t position, uint32_t duration);
 // Test
 
 // Misc
-void print_packet_info(BusServoPacket *packet);
+void print_bus_servo_packet_info(BusServoPacket *packet);
 
 #endif

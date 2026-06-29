@@ -15,7 +15,6 @@
 #include "host.h"
 
 BusServoPacketController bus_servo_packet_controller;
-uint8_t rx_buf = 0;
 
 /**
  * @brief Create bus servo packet
@@ -54,76 +53,13 @@ void setChksum(BusServoPacket *packet) {
 }
 
 /** 
- * @brief Handle received bus servo packet
- * @param
- *      @arg rx_buf
- */
-bool bus_servo_packet_handler(uint8_t rx_buf) {
-    switch (bus_servo_packet_controller.rx_state) {
-        case RECEIVING_HEADER1: {
-            bus_servo_packet_controller.rx_state = rx_buf == BUS_SERVO_PACKET_HEADER ? RECEIVING_HEADER2 : RECEIVING_HEADER1;
-            bus_servo_packet_controller.rx_packet.header1 = BUS_SERVO_PACKET_HEADER;
-            return false;
-        }
-        case RECEIVING_HEADER2: {
-            bus_servo_packet_controller.rx_state = rx_buf == BUS_SERVO_PACKET_HEADER ? RECEIVING_SERVO_ID : RECEIVING_HEADER2;
-            bus_servo_packet_controller.rx_packet.header2 = BUS_SERVO_PACKET_HEADER;
-            return false;
-        }
-        case RECEIVING_SERVO_ID: {
-            bus_servo_packet_controller.rx_state = rx_buf == bus_servo_packet_controller.tx_packet.servo_id ? RECEIVING_DATA_LENGTH : RECEIVING_SERVO_ID;
-            bus_servo_packet_controller.rx_packet.servo_id = rx_buf;
-            return false;
-        }
-        case RECEIVING_DATA_LENGTH: {
-            if (rx_buf > 7) {
-                bus_servo_packet_controller.rx_state = RECEIVING_HEADER1;
-            } else {
-                bus_servo_packet_controller.rx_state = RECEIVING_COMMAND;
-                bus_servo_packet_controller.rx_packet.data_length = rx_buf;
-            }
-            return false;
-        }
-        case RECEIVING_COMMAND: {
-            bus_servo_packet_controller.rx_state = bus_servo_packet_controller.tx_packet.data_length > 3 ?  RECEIVING_CHECKSUM : RECEIVING_PARAMETERS;
-            bus_servo_packet_controller.rx_packet.cmd = rx_buf;
-            return false;
-        } 
-        case RECEIVING_PARAMETERS: {
-            bus_servo_packet_controller.rx_packet.params[bus_servo_packet_controller.param_index++] =  rx_buf;
-            if (bus_servo_packet_controller.param_index + 3 == bus_servo_packet_controller.rx_packet.data_length) 
-                bus_servo_packet_controller.rx_state = RECEIVING_CHECKSUM;
-            return false;
-        } 
-        case RECEIVING_CHECKSUM: {
-            // Set receiving state
-            bus_servo_packet_controller.rx_state = RECEIVING_HEADER1;
-
-            // Set packet length
-            bus_servo_packet_controller.rx_packet.packet_length = bus_servo_packet_controller.rx_packet.data_length + 3;
-
-            // Generate the received packet checksum
-            setChksum(&bus_servo_packet_controller.rx_packet);
-
-            /*
-             * Verify checksum.
-             * If checksum is identical, it indicates that the packet has been received completely.
-             * If checksum is not identical, it indicates that the packet has error.
-             */
-            return bus_servo_packet_controller.rx_packet.chksum != rx_buf;
-        } 
-        default: 
-            return false;
-    }
-}
-
-/** 
  * @brief Transmit packet to bus servo
  * @param
  *      @arg packet
+ * @retval
  */
 int transmit_packet_to_bus_servo(BusServoPacket *packet){
-    // reset bus servo pin
+    // Enter write mode (reset bus servo pin)
     HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_RESET);
 
     // Transmit packet
@@ -155,7 +91,7 @@ int transmit_packet_to_bus_servo(BusServoPacket *packet){
         }   
     }
 
-    // Set bus servo pin
+    // Exit write mode (set bus servo pin)
     HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
 
     return OK;
@@ -166,7 +102,7 @@ int receive_packet_from_bus_servo(void) {
     bus_servo_packet_controller.rx_finished = false;                     
     bus_servo_packet_controller.param_index = 0;
 
-    HAL_UART_Receive_IT(&huart2, &rx_buf, 1);
+    HAL_UART_Receive_IT(&huart2, &bus_servo_packet_controller.rx_buf, 1);
 
 
     uint32_t start_time = HAL_GetTick();
@@ -260,7 +196,7 @@ void set_bus_servo_pos(uint32_t id, int16_t position, uint32_t duration) {
         return;
 }
 
-void print_packet_info(BusServoPacket *packet) {
+void print_bus_servo_packet_info(BusServoPacket *packet) {
     char buf[20];
 
     send_msg_to_host("==============================");
@@ -291,13 +227,77 @@ void print_packet_info(BusServoPacket *packet) {
     send_msg_to_host("==============================");
 }
 
+/** 
+ * @brief Handle received bus servo packet
+ * @param
+ *      @arg rx_buf
+ */
+bool bus_servo_packet_handler(uint8_t rx_buf) {
+    switch (bus_servo_packet_controller.rx_state) {
+        case RECEIVING_HEADER1: {
+            bus_servo_packet_controller.rx_state = rx_buf == BUS_SERVO_PACKET_HEADER ? RECEIVING_HEADER2 : RECEIVING_HEADER1;
+            bus_servo_packet_controller.rx_packet.header1 = BUS_SERVO_PACKET_HEADER;
+            return false;
+        }
+        case RECEIVING_HEADER2: {
+            bus_servo_packet_controller.rx_state = rx_buf == BUS_SERVO_PACKET_HEADER ? RECEIVING_SERVO_ID : RECEIVING_HEADER2;
+            bus_servo_packet_controller.rx_packet.header2 = BUS_SERVO_PACKET_HEADER;
+            return false;
+        }
+        case RECEIVING_SERVO_ID: {
+            bus_servo_packet_controller.rx_state = rx_buf == bus_servo_packet_controller.tx_packet.servo_id ? RECEIVING_DATA_LENGTH : RECEIVING_SERVO_ID;
+            bus_servo_packet_controller.rx_packet.servo_id = rx_buf;
+            return false;
+        }
+        case RECEIVING_DATA_LENGTH: {
+            if (rx_buf > 7) {
+                bus_servo_packet_controller.rx_state = RECEIVING_HEADER1;
+            } else {
+                bus_servo_packet_controller.rx_state = RECEIVING_COMMAND;
+                bus_servo_packet_controller.rx_packet.data_length = rx_buf;
+            }
+            return false;
+        }
+        case RECEIVING_COMMAND: {
+            bus_servo_packet_controller.rx_state = bus_servo_packet_controller.tx_packet.data_length > 3 ?  RECEIVING_CHECKSUM : RECEIVING_PARAMETERS;
+            bus_servo_packet_controller.rx_packet.cmd = rx_buf;
+            return false;
+        } 
+        case RECEIVING_PARAMETERS: {
+            bus_servo_packet_controller.rx_packet.params[bus_servo_packet_controller.param_index++] =  rx_buf;
+            if (bus_servo_packet_controller.param_index + 3 == bus_servo_packet_controller.rx_packet.data_length) 
+                bus_servo_packet_controller.rx_state = RECEIVING_CHECKSUM;
+            return false;
+        } 
+        case RECEIVING_CHECKSUM: {
+            // Set receiving state
+            bus_servo_packet_controller.rx_state = RECEIVING_HEADER1;
+
+            // Set packet length
+            bus_servo_packet_controller.rx_packet.packet_length = bus_servo_packet_controller.rx_packet.data_length + 3;
+
+            // Generate the received packet checksum
+            setChksum(&bus_servo_packet_controller.rx_packet);
+
+            /*
+             * Verify checksum.
+             * If checksum is identical, it indicates that the packet has been received completely.
+             * If checksum is not identical, it indicates that the packet has error.
+             */
+            return bus_servo_packet_controller.rx_packet.chksum != rx_buf;
+        } 
+        default: 
+            return false;
+    }
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    if (huart->Instance == USART2) {
-        if (bus_servo_packet_handler(rx_buf)) {
+    if(huart->Instance == USART2) {
+        if (bus_servo_packet_handler(bus_servo_packet_controller.rx_buf)) {
             bus_servo_packet_controller.rx_finished = true;
         } else {
             if (bus_servo_packet_controller.rx_finished == false) {
-                HAL_UART_Receive_IT(&huart2, &rx_buf, 1);
+                HAL_UART_Receive_IT(&huart2, &bus_servo_packet_controller.rx_buf, 1);
             }
         }
     }
