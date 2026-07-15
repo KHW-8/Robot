@@ -11,6 +11,6 @@ void test_buzzer(void) {
     HAL_Delay(1000);
 }
 
-void init_buzzer(void) {
+void initialize_buzzer(void) {
     HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
 }

@@ -11,6 +11,6 @@ void test_led1(void) {
     HAL_Delay(500);
 }
 
-void init_led() {
+void initialize_led() {
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
 }

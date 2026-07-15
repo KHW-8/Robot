@@ -1,37 +1,40 @@
+/** 
+ * @brief Host
+ */
 #ifndef HOST_H_
 #define HOST_H_
 
+//////////* Headers *//////////
+/* STD */
 #include <stdint.h>
 #include <stdbool.h>
+/* ArmController */
+#include "global.h"
+///////////////////////////////
 
 // Host packet
 #define HOST_PACKET_HEADER 0x55
 #define HOST_PACKET_HEADER_COUNT 2
-#define HOST_RX_BUFFER_SIZE 255
+#define HOST_PACKET_DATA_MAX_LENGTH 1024
 
 typedef enum {
-    RECEIVING_HEADER1_,
-    RECEIVING_HEADER2_,
-    RECEIVING_DATA_LENGTH_,
-    RECEIVING_DATA_,
-    RECEIVING_CHECKSUM_
-} HostPacketRecvState;
-
-typedef enum {
-    NONE,
+    NO_PERIPHERAL,
     BUS_SERVO,
     BUZZER,
     LED,
 } Peripheral;
+
+#pragma pack(1)
 
 typedef struct {
     uint8_t header1;
     uint8_t header2;
     uint8_t peripheral;
     uint8_t data_length;
-    uint8_t chksum;
-    uint8_t packet_length;
+    uint8_t data[HOST_PACKET_DATA_MAX_LENGTH];
 } HostPacket;
+
+#pragma pack(0)
 
 typedef struct {
     // Transmit
@@ -39,24 +42,24 @@ typedef struct {
 
     // Receive
     HostPacket rx_packet;
-    uint8_t rx_buf[HOST_RX_BUFFER_SIZE];
-    HostPacketRecvState rx_state;
     bool rx_finished;
-
-    // Misc
-    uint32_t time_out;
+    Res rx_state;
 } HostPacketController;
 
+
 // Initiation
-void init_host(void);
+void initialize_host();
+void initialize_host_packet(HostPacket *packet, uint8_t peripheral);
 
 // Transmit/Receive
-void transmit_packet_to_host(HostPacket *packet);
-void receive_packet_from_host(void);
+Res transmit_packet_to_host(HostPacket *packet);
+Res transmit_msg_to_host(const char* buf);
 
-int send_msg_to_host(const char* buf);
+void receive_packet_from_host();
 
-// Misc
-void print_host_packet_info(HostPacket *packet);
+// Handle
+Res handle_host_rx_buffer(uint8_t packet_len);
+void handle_host_packet(HostPacket *packet);
+void handle_bus_servo(HostPacket *packet);
 
 #endif

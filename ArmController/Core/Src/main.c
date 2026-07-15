@@ -24,12 +24,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// STD
+/* STD */
 #include <stdint.h>
-// ArmController
+#include <stdio.h>
+/* ArmController */
+// Host
+#include "host.h"
+// Peripheral
 #include "buzzer.h"
 #include "bus_servo.h"
-#include "host.h"
 #include "led.h"
 /* USER CODE END Includes */
 
@@ -99,12 +102,12 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   // Init peripherals
-  init_bus_servo();
-  init_buzzer();
-  init_led();
+  initialize_bus_servo();
+  initialize_buzzer();
+  initialize_led();
 
   // Init host
-  init_host();
+  initialize_host();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -114,6 +117,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    receive_packet_from_host();
   }
   /* USER CODE END 3 */
 }

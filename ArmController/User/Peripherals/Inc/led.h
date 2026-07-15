@@ -7,6 +7,6 @@
 
 void test_led1(void);
 
-void init_led();
+void initialize_led();
 
 #endif 
