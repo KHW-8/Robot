@@ -11,7 +11,7 @@
 //// User
 // Host
 #include "request_type.h"
-#include "report_type.h"
+#include "response_type.h"
 // Peripherals
 #include "bus_servo.h"
 #include "buzzer.h"
@@ -140,7 +140,7 @@ void handle_bus_servo(HostPacket *packet) {
         int16_t angle = 0; 
 
         // Create a report to transmit to the host
-        BusServoAngleReport *report = (BusServoAngleReport*)&host_packet_controller.tx_packet.data;
+        BusServoAngleResponse *report = (BusServoAngleResponse*)&host_packet_controller.tx_packet.data;
         report->cmd = packet->data[0];
         report->result = OK;
 

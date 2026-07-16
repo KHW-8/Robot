@@ -1,5 +1,5 @@
-#ifndef REPORT_TYPE_H
-#define REPORT_TYPE_H
+#ifndef RESPONSETYPE_H
+#define RESPONSETYPE_H
 
 #include <stdint.h>
 
@@ -13,7 +13,7 @@ typedef struct {
         uint8_t servo_id;
         int16_t angle;
     } servos[];
-} BusServoAngleReport;
+} BusServoAngleResponse;
 
 #pragma pack(0)
 
