@@ -61,5 +61,7 @@ void receive_packet_from_host();
 Res handle_host_rx_buffer(uint8_t packet_len);
 void handle_host_packet(HostPacket *packet);
 void handle_bus_servo(HostPacket *packet);
+void handle_buzzer(HostPacket *packet);
+void handle_led(HostPacket *packet);
 
 #endif

@@ -53,9 +53,9 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
     
     for (uint16_t i = 0; i < packet_length; i++) {
         // Wait until TDR is empty (TXE flag is set)
-        uint32_t start_time = HAL_GetTick();
+        uint32_t initial_tick = HAL_GetTick();
         while (!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TXE)) {
-            if (HAL_GetTick() - start_time > 10) {
+            if (HAL_GetTick() - initial_tick > 10) {
                 HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
                 return ERR;
             }   
@@ -69,9 +69,9 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
 
 
     // Wait until TDR is empty (TC flag is set)
-    uint32_t start_time = HAL_GetTick();
+    uint32_t initial_tick = HAL_GetTick();
     while (!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC)) {
-        if (HAL_GetTick() - start_time > 10) {
+        if (HAL_GetTick() - initial_tick > 10) {
             HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
             return ERR;
         }   
@@ -93,10 +93,10 @@ Res receive_packet_from_bus_servo() {
 
     HAL_UART_Receive_IT(&huart2, &bus_servo_rx_buf, 1);
 
-    uint32_t start_time = HAL_GetTick();
+    uint32_t initial_tick = HAL_GetTick();
 
     while (!bus_servo_packet_controller.rx_finished) {
-        if (HAL_GetTick() - start_time > bus_servo_packet_controller.time_out)
+        if (HAL_GetTick() - initial_tick > bus_servo_packet_controller.time_out)
             break;
     }
 

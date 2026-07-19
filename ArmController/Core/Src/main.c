@@ -24,20 +24,29 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+//////////* Headers *//////////
 /* STD */
 #include <stdint.h>
 #include <stdio.h>
 /* ArmController */
+//// User
 // Host
 #include "host.h"
 // Peripheral
 #include "buzzer.h"
 #include "bus_servo.h"
 #include "led.h"
+///////////////////////////////
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+
+//////////* Extern *//////////
+///////////////////////////////
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -118,6 +127,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     receive_packet_from_host();
+    execute_led_task();
   }
   /* USER CODE END 3 */
 }

@@ -6,7 +6,6 @@
 #include <stdio.h>
 /* ArmController */
 //// Core
-#include "global.h"
 #include "usart.h"
 //// User
 // Host
@@ -16,13 +15,16 @@
 #include "bus_servo.h"
 #include "buzzer.h"
 #include "led.h"
+//// Global
+#include "global.h"
+///////////////////////////////
+
+//////////* Extern *//////////
 ///////////////////////////////
 
 HostPacketController host_packet_controller;
 
 uint8_t host_rx_buf[HOST_PACKET_DATA_MAX_LENGTH];
-
-extern void print_host_packet_info(HostPacket *packet);
 
 Res transmit_packet_to_host(HostPacket *packet) {
     uint8_t  packet_length = PACKET_HEADER_COUNT + 2 + packet->data_length;
@@ -31,9 +33,9 @@ Res transmit_packet_to_host(HostPacket *packet) {
     
     for (uint16_t i = 0; i < packet_length; i++) {
         // Wait until TDR is empty (TXE flag is set)
-        uint32_t start_time = HAL_GetTick();
+        uint32_t initial_tick = HAL_GetTick();
         while (!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE)) {
-            if (HAL_GetTick() - start_time > 10) 
+            if (HAL_GetTick() - initial_tick > 10) 
                 return ERR;
         }
         
@@ -42,9 +44,9 @@ Res transmit_packet_to_host(HostPacket *packet) {
 
 
     // Wait until TDR is empty (TC flag is set)
-    uint32_t start_time = HAL_GetTick();
+    uint32_t initial_tick = HAL_GetTick();
     while (!__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC)) {
-        if (HAL_GetTick() - start_time > 10) 
+        if (HAL_GetTick() - initial_tick > 10) 
             return ERR;
     }
 
@@ -107,8 +109,8 @@ Res handle_host_rx_buffer(uint8_t packet_len) {
 void handle_host_packet(HostPacket *packet) {
     switch (packet->peripheral) {
         case BUS_SERVO: handle_bus_servo(packet); break;
-        case BUZZER: break;
-        case LED: break;
+        case BUZZER: handle_buzzer(packet); break;
+        case LED: handle_led(packet); break;
         default: break;
     }
 }
@@ -159,6 +161,39 @@ void handle_bus_servo(HostPacket *packet) {
 
     // Transmit packet to host
     transmit_packet_to_host(&host_packet_controller.tx_packet);
+}
+
+/** 
+ * @brief
+ * @retval
+ */
+void handle_buzzer(HostPacket *packet) {
+
+}
+
+
+/** 
+ * @brief
+ * @retval None
+ */
+void handle_led(HostPacket *packet) {
+    LEDBlinkRequest *request = (LEDBlinkRequest*)&packet->data;
+
+    LEDTask task;
+    task.led_count = request->led_count;
+    task.finished = false;
+
+    for (uint8_t i = 0; i < request->led_count; i++) {
+        task.leds[i].led_id = request->leds[i].led_id;
+        task.leds[i].on_duration = (uint32_t)(request->leds[i].on_duration * 1000);     // convert seconds to to milliseconds
+        task.leds[i].off_duration = (uint32_t)(request->leds[i].off_duration * 1000);   // convert seconds to to milliseconds
+        task.leds[i].repeat_count = request->leds[i].repeat_count;
+
+        task.leds[i].state = READY_TO_TURN_ON_LED;
+        task.leds[i].tick_count = 0;
+    }
+
+    add_led_task(task);
 }
 
 
