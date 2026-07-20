@@ -1,33 +1,48 @@
 #ifndef BOARD_CONTROLLER_H
 #define BOARD_CONTROLLER_H
 
-// STD
 // ROS2
 #include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/trigger.hpp"
 // Serial
 #include "serial.h"
+// Host
+#include "robot_controller_msg/msg/buzzer.hpp"
+#include "robot_controller_msg/msg/led.hpp"
+#include "robot_controller_msg/msg/servo.hpp"
+#include "robot_controller_msg/msg/servos.hpp"
 
 class BoardController : public rclcpp::Node {
 public:
     BoardController() 
         :Node("board_controller")
     {
+        // Waiting for robot controller node to start
+        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
+        this->client->wait_for_service();
     }
 
 public:
     void list_ports();
     void transmit();
+
+private:
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr client;
+    rclcpp::Subscription<robot_controller_msg::msg::Buzzer>::SharedPtr buzzer_sub;
+    rclcpp::Subscription<robot_controller_msg::msg::LED>::SharedPtr led_sub;
+    rclcpp::Subscription<robot_controller_msg::msg::Servos>::SharedPtr servo_sub;
 };
 
 void BoardController::list_ports() {
     auto devices = serial::list_ports();
     for (const auto& device : devices) {
-        std::string str;
-        str.append( "Port: " + device.port + " ");
-        str.append( "Description: " + device.description + " ");
-        str.append( "Hardware ID: " + device.hardware_id + " ");
-
-        RCLCPP_INFO(rclcpp::get_logger(""), "%s", str.c_str());
+        RCLCPP_INFO(
+            rclcpp::get_logger(""), 
+            "Port: %s, Description: %s, Hardware ID: %s", 
+            device.port.c_str(),
+            device.description.c_str(),
+            device.hardware_id.c_str()
+        );
     }
 }
 

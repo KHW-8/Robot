@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(robot_controller_msg REQUIRED)
 
 # Includes
 set(third_party_path ${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty)
@@ -49,6 +50,7 @@ add_executable(board_controller
 ament_target_dependencies(board_controller 
     rclcpp 
     std_srvs 
+    robot_controller_msg
 )
 
 install(TARGETS
