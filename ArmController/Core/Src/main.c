@@ -18,26 +18,35 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "crc.h"
-#include "host.h"
+#include "dma.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-// STD
+
+//////////* Headers *//////////
+/* STD */
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-// ArmController
+/* ArmController */
+//// User
+// Host
+#include "host.h"
+// Peripheral
 #include "buzzer.h"
 #include "bus_servo.h"
 #include "led.h"
+///////////////////////////////
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-extern BusServoPacketController bus_servo_packet_controller;
+
+//////////* Extern *//////////
+///////////////////////////////
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -96,14 +105,18 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
-  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  init_bus_servo();
-  init_buzzer();
-  init_led();
+  // Init peripherals
+  initialize_bus_servo();
+  initialize_buzzer();
+  initialize_led();
+
+  // Init host
+  initialize_host();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -113,6 +126,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    receive_packet_from_host();
+    execute_led_task();
   }
   /* USER CODE END 3 */
 }
@@ -157,7 +172,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /**

@@ -8,6 +8,6 @@
 
 void test_buzzer(void);
 
-void init_buzzer(void);
+void initialize_buzzer(void);
 
 #endif
