@@ -1,18 +1,18 @@
 // ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
-// ArmPi
-#include "robot_controller_msg/msg/led_state.hpp"
+// Host
+#include "robot_controller_msg/msg/led.hpp"
 
 class LEDNode : public rclcpp::Node {
 public: 
     LEDNode() 
         : Node("led_node")
     {
-        this->pub = this->create_publisher<robot_controller_msg::msg::LEDState>("/robot_controller/led/set", 10);
+        this->pub = this->create_publisher<robot_controller_msg::msg::LED>("/robot_controller/led/set", 10);
 
-        // Waiting for robot arm underlying control services to start
-        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/init_complete");
+        // Waiting for robot controller node to start
+        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
         this->client->wait_for_service();
 
         // Send message
@@ -21,7 +21,7 @@ public:
 
 public:
     void publish_led_state() {
-        auto msg = robot_controller_msg::msg::LEDState();
+        auto msg = robot_controller_msg::msg::LED();
         msg.id = 2;
         msg.on_duration = 0.1;
         msg.off_duration = 0.5;
@@ -39,7 +39,7 @@ public:
     }
 
 private:
-    rclcpp::Publisher<robot_controller_msg::msg::LEDState>::SharedPtr pub;
+    rclcpp::Publisher<robot_controller_msg::msg::LED>::SharedPtr pub;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr client;
 };
 

@@ -5,11 +5,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-## find dependencies ##
+## Find dependencies ##
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(robot_controller_msg REQUIRED)
+
+# Includes
+set(include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/robot_controller_node
+    # Third party
+)
+
+include_directories(${include})
 
 ## Launch files ##
 install(DIRECTORY
@@ -18,7 +26,10 @@ install(DIRECTORY
 )
 
 ## Executables ##
-add_executable(robot_controller src/robot_controller_node.cpp)
+file(GLOB_RECURSE robot_controller_node_src 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/robot_controller_node/*.cpp
+)
+add_executable(robot_controller ${robot_controller_node_src})
 ament_target_dependencies(robot_controller 
     rclcpp 
     std_srvs 

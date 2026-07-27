@@ -1,2 +1,2 @@
 source install/setup.sh
-ros2 launch board_controller board_controller.launch.py
+ros2 launch example bus_servo.launch.py

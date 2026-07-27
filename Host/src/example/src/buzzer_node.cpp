@@ -3,8 +3,8 @@
 // ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
-// ArmPi
-#include "robot_controller_msg/msg/buzzer_state.hpp"
+// Host
+#include "robot_controller_msg/msg/buzzer.hpp"
 
 using namespace std::chrono_literals;
 
@@ -13,16 +13,16 @@ public:
     BuzzerNode() 
         : Node("buzzer_node")
     {
-        this->pub = this->create_publisher<robot_controller_msg::msg::BuzzerState>("/robot_controller/buzzer/set", 1);
+        this->pub = this->create_publisher<robot_controller_msg::msg::Buzzer>("/robot_controller/buzzer/set", 1);
 
-        // Waiting for robot arm underlying control services to start
-        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/init_complete");
+        // Waiting for robot controller node to start
+        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
         this->client->wait_for_service();
     }
 
 public:
     void set_buzzer(double freq, double on_duration, double off_duration, size_t repeqat) {
-        auto msg = robot_controller_msg::msg::BuzzerState();
+        auto msg = robot_controller_msg::msg::Buzzer();
         msg.freq = freq;
         msg.on_duration = on_duration;
         msg.off_duration = off_duration;
@@ -41,7 +41,7 @@ public:
     }
 
 private:
-    rclcpp::Publisher<robot_controller_msg::msg::BuzzerState>::SharedPtr pub;
+    rclcpp::Publisher<robot_controller_msg::msg::Buzzer>::SharedPtr pub;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr client;
 };
 

@@ -11,10 +11,10 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-    "msg/LEDState.msg"
-    "msg/BuzzerState.msg"
-    "msg/ServoPosition.msg"
-    "msg/ServosPosition.msg"
+    "msg/LED.msg"
+    "msg/Buzzer.msg"
+    "msg/Servo.msg"
+    "msg/Servos.msg"
     DEPENDENCIES std_msgs
 )
 

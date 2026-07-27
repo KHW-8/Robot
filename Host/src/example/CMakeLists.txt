@@ -9,7 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-# ArmPi
+# Host
 find_package(robot_controller_msg REQUIRED)
 
 ## Launch files ##
