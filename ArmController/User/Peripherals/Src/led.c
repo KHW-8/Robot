@@ -9,23 +9,23 @@
 #include "host.h"
 ///////////////////////////////
 
-LEDTaskQueue led_task_queue;
+static LEDTaskQueue task_queue;
 
-LEDTask current_task;
+static LEDTask current_task;
 
-uint32_t last_tick = 0;
+static uint32_t last_tick = 0;
 
 /** 
  * @brief 
  * @param
- *      @arg on_duration (second)
- *      @arg off_duration (second)
+ *      @arg task
+ * @retval
  */
 Res add_led_task(LEDTask task) {
-    if (led_task_queue.isFull(&led_task_queue) == true)
+    if (task_queue.isFull(&task_queue) == true)
         return ERR;
 
-    if (led_task_queue.push(&led_task_queue, task) == false)
+    if (task_queue.push(&task_queue, task) == false)
         return ERR;
 
     return OK;
@@ -57,11 +57,11 @@ void execute_led_task() {
         return;
     }
 
-    if (current_task.finished == true) {
-        if (led_task_queue.peak(&led_task_queue, &current_task) == false)
+    if (check_led_task_finished(&current_task)) {
+        if (task_queue.pop(&task_queue, &current_task) == false)
             return;
-    } 
-        
+    }
+
     for (uint8_t i = 0; i < current_task.led_count; i++) {
         switch (current_task.leds[i].state) {
             case READY_TO_TURN_ON_LED: {
@@ -98,10 +98,10 @@ void execute_led_task() {
 
                 if (current_task.leds[i].tick_count >= current_task.leds[i].off_duration) {
                     current_task.leds[i].tick_count = 0;
-                    current_task.leds[i].state = COMPLETE_LED_BLINK;
+                    current_task.leds[i].state = COMPLETE_A_LED_BLINK;
                 }
                 break;
-            case COMPLETE_LED_BLINK: {
+            case COMPLETE_A_LED_BLINK: {
                 current_task.leds[i].repeat_count--;
 
                 if (current_task.leds[i].repeat_count != 0) 
@@ -114,12 +114,6 @@ void execute_led_task() {
             default:
                 break;
         }
-    }
-    
-    if (check_led_task_finished(&current_task)) {
-        LEDTask task;
-        led_task_queue.pop(&led_task_queue, &task);
-        current_task.finished = true;
     }
         
     last_tick = current_tick;
@@ -142,20 +136,8 @@ void turn_led_off(uint8_t id) {
 }
 
 
-void test_led1(void) {
-    // Light up
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-    HAL_Delay(500);
-
-    // Light down
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-    HAL_Delay(500);
-}
-
 void initialize_led() {
-    initialize_led_task_queue(&led_task_queue);
-    
-    current_task.finished = true;
+    initialize_led_task_queue(&task_queue);
 
     turn_led_off(_LED);
     turn_led_off(_LED1);

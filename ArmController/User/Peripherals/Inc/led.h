@@ -6,8 +6,6 @@
 
 //////////* Headers *//////////
 /* STD */
-#include <stdint.h>
-#include <stdbool.h>
 /* ArmController */
 //// Task
 #include "led_task.h"
@@ -31,8 +29,5 @@ void execute_led_task();
 // Turn LED on/off 
 void turn_led_on(uint8_t id);
 void turn_led_off(uint8_t id);
-
-// Test
-void test_led1(void);
 
 #endif 

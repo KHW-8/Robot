@@ -1,5 +1,9 @@
 #include "led_task.h"
 
+void initialize_led_task(LEDTask *task) {
+    task->led_count = 0;
+}
+
 void initialize_led_task_queue(LEDTaskQueue *queue) {
     queue->head = 0;
     queue->tail = 0;
@@ -36,7 +40,8 @@ bool pop_item_from_led_task_queue(LEDTaskQueue *queue, LEDTask *task) {
     if (queue->isEmpty(queue)) 
         return false;
 
-    *task = queue->items[queue->head];
+    if (task != NULL)
+        *task = queue->items[queue->head];
     queue->head = (queue->head + 1) % LED_TASK_QUEUE_CAPACITY;
     queue->size--;
 

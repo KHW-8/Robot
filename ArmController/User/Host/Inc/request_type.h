@@ -22,19 +22,24 @@ typedef struct {
     } servos[];
 } BusServoAngleSettingRequest;
 
-/*Buzzer */
-
+/* Buzzer */
+typedef struct {
+    uint16_t frequency;
+    uint16_t on_duration;
+    uint16_t off_duration;
+    uint16_t repeat_count;
+} BuzzerRequest;
 
 /* LED */
 typedef struct {
     uint8_t led_count;
     struct {
         uint8_t led_id;
-        uint8_t on_duration;
-        uint8_t off_duration;
-        uint8_t repeat_count;
+        uint16_t on_duration;
+        uint16_t off_duration;
+        uint16_t repeat_count;
     } leds[];
-} LEDBlinkRequest;
+} LEDRequest;
 
 #pragma pack(0)
 
