@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(robot_controller_msg)
+project(board_controller_msg)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -11,10 +11,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-    "msg/LED.msg"
-    "msg/Buzzer.msg"
-    "msg/Servo.msg"
-    "msg/Servos.msg"
+    "msg/HostPacket.msg"
     DEPENDENCIES std_msgs
 )
 

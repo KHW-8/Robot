@@ -14,7 +14,7 @@ public:
     BusServoNode() 
         :Node("bus_servo_node")
     {
-        this->pub = this->create_publisher<robot_controller_msg::msg::Servos>("/robot_controller/bus_servo/set_position", 1);
+        this->pub = this->create_publisher<robot_controller_msg::msg::Servos>("/robot_controller/bus_servo", 1);
 
         // Waiting for robot controller node to start
         this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
@@ -60,11 +60,28 @@ int main(int argc, char** argv) {
             std::this_thread::sleep_for(1s);        // Wait 1 sec
         }
     } catch(const rclcpp::exceptions::RCLError& e) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "%s", e.what());
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: %s", 
+            __FILE__, 
+            __LINE__, 
+            e.what()
+        );
     } catch(const rclcpp::exceptions::InvalidServiceNameError& e) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "%s", e.what());
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: %s", 
+            __FILE__, 
+            __LINE__, 
+            e.what()
+        );
     } catch(...) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Unknown error.");
+         RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Unknown error.",
+            __FILE__,
+            __LINE__
+        );
     }
 
     rclcpp::shutdown();     // Shutdown 

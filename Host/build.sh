@@ -1,3 +1,3 @@
-colcon build --paths src/driver/*_msg*
+colcon build --paths src/msg/*_msg*
 source install/setup.sh
 colcon build

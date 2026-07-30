@@ -2,18 +2,18 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
 // Host
-#include "robot_controller_msg/msg/led.hpp"
+#include "robot_controller_msg/msg/le_ds.hpp"
 
 class LEDNode : public rclcpp::Node {
 public: 
     LEDNode() 
         : Node("led_node")
     {
-        this->pub = this->create_publisher<robot_controller_msg::msg::LED>("/robot_controller/led/set", 10);
+        this->pub = this->create_publisher<robot_controller_msg::msg::LEDs>("/robot_controller/led", 10);
 
         // Waiting for robot controller node to start
-        this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
-        this->client->wait_for_service();
+        this->robot_controller_client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
+        this->robot_controller_client->wait_for_service();
 
         // Send message
         publish_led_state();
@@ -21,26 +21,30 @@ public:
 
 public:
     void publish_led_state() {
-        auto msg = robot_controller_msg::msg::LED();
-        msg.id = 2;
-        msg.on_duration = 0.1;
-        msg.off_duration = 0.5;
-        msg.repeat_count = 10;
+        auto led = robot_controller_msg::msg::LED();
+        led.id = 2;
+        led.on_duration = 0.5;
+        led.off_duration = 0.5;
+        led.repeat_count = 10;
+
+        auto msg = robot_controller_msg::msg::LEDs();
+        msg.leds.emplace_back(led);
         
         this->pub->publish(msg);
+
         RCLCPP_INFO(
             rclcpp::get_logger(""), 
-            "Published LED State: id=%d, on_duration=%.2f, off_duration=%.2f, repeat=%d",
-            msg.id,
-            msg.on_duration,
-            msg.on_duration,
-            msg.repeat_count
+            "LED ID: %d, On Duration: %.2fs, Off Duration: %.2fs, Repeat Count: %d", 
+            led.id,
+            led.on_duration,
+            led.off_duration,
+            led.repeat_count
         );
     }
 
 private:
-    rclcpp::Publisher<robot_controller_msg::msg::LED>::SharedPtr pub;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr client;
+    rclcpp::Publisher<robot_controller_msg::msg::LEDs>::SharedPtr pub;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr robot_controller_client;
 };
 
 int main(int argc, char** argv) {

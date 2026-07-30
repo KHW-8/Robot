@@ -13,7 +13,7 @@ public:
     BuzzerNode() 
         : Node("buzzer_node")
     {
-        this->pub = this->create_publisher<robot_controller_msg::msg::Buzzer>("/robot_controller/buzzer/set", 1);
+        this->pub = this->create_publisher<robot_controller_msg::msg::Buzzer>("/robot_controller/buzzer", 1);
 
         // Waiting for robot controller node to start
         this->client = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");

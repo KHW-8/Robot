@@ -16,7 +16,7 @@ set(third_party_path ${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty)
 set(include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/board_controller
     # Third party
-   ${third_party_path}/serial/include
+    ${third_party_path}/serial/include
 )
 
 include_directories(${include})

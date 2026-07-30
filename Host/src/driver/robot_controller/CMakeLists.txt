@@ -6,15 +6,18 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
+# ROS2
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
+# Host
+find_package(board_controller_msg REQUIRED)
 find_package(robot_controller_msg REQUIRED)
 
-# Includes
+## Includes ##
 set(include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/robot_controller_node
-    # Third party
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/peripheral
 )
 
 include_directories(${include})
@@ -33,6 +36,7 @@ add_executable(robot_controller ${robot_controller_node_src})
 ament_target_dependencies(robot_controller 
     rclcpp 
     std_srvs 
+    board_controller_msg
     robot_controller_msg
 )
 
