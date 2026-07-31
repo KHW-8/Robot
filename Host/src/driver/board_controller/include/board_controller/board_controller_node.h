@@ -2,7 +2,7 @@
 #define BOARD_CONTROLLER_H
 
 // Serial
-#include "serial.h"
+#include "serial/serial.h"
 // ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"

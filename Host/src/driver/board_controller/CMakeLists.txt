@@ -5,36 +5,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-## find dependencies ##
+## Find dependencies ##
+find_package(serial REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(robot_controller_msg REQUIRED)
 
-# Includes
-set(third_party_path ${CMAKE_CURRENT_SOURCE_DIR}/../../../3rdparty)
-set(include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/board_controller
-    # Third party
-    ${third_party_path}/serial/include
-)
-
-include_directories(${include})
-
-## Third party sources ##
-set(third_party_src)
-if(UNIX)
-    list(APPEND third_party_src ${third_party_path}/serial/src/serial.cc)
-    list(APPEND third_party_src ${third_party_path}/serial/src/impl/unix.cc)
-    list(APPEND third_party_src ${third_party_path}/serial/src/impl/list_ports/list_ports_linux.cc)
-elseif(WIN32)
-    list(APPEND third_party_src ${third_party_path}/serial/src/serial.cc)
-    list(APPEND third_party_src ${third_party_path}/serial/src/impl/win.cc)
-    list(APPEND third_party_src ${third_party_path}/serial/src/impl/list_ports/list_ports_win.cc)
-endif()
-foreach(s IN LISTS third_party_src)
-    message(${s})
-endforeach()
 
 ## Launch files ##
 install(DIRECTORY
@@ -42,14 +19,23 @@ install(DIRECTORY
     DESTINATION share/${PROJECT_NAME}
 )
 
-## Executables ##
+## Targets ##
+# Board Controller
 add_executable(board_controller 
     src/board_controller_node.cpp
-    ${third_party_src}
 )
+
+target_include_directories(board_controller PRIVATE
+    ${CMAKE_SOURCE_DIR}/include/board_controller
+)
+
 ament_target_dependencies(board_controller 
+    # ROS
     rclcpp 
     std_srvs 
+    # Serial
+    serial
+    # Host
     robot_controller_msg
 )
 
