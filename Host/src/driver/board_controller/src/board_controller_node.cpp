@@ -3,6 +3,8 @@
 BoardController::BoardController() 
     :Node("board_controller")
 {
+    list_ports();
+
     ini_srv = this->create_service<std_srvs::srv::Trigger>(
         "~/initialization_complete", 
         std::bind(&BoardController::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
