@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project(example)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -20,24 +20,28 @@ install(DIRECTORY
 
 ## Executables ##
 add_executable(bus_servo src/bus_servo_node.cpp)
-ament_target_dependencies(bus_servo 
-    rclcpp 
-    std_srvs 
-    robot_controller_msg
+
+target_link_libraries(bus_servo PUBLIC
+    rclcpp::rclcpp
+    std_srvs::std_srvs
+    robot_controller_msg::robot_controller_msg
 )
 
 add_executable(buzzer src/buzzer_node.cpp)
-ament_target_dependencies(buzzer 
-    rclcpp 
-    std_srvs 
-    robot_controller_msg
+
+target_link_libraries(buzzer PUBLIC
+    rclcpp::rclcpp
+    std_srvs::std_srvs
+    robot_controller_msg::robot_controller_msg
 )
 
 add_executable(led src/led_node.cpp)
-ament_target_dependencies(led 
-    rclcpp 
-    std_srvs 
-    robot_controller_msg
+
+
+target_link_libraries(led PUBLIC
+    rclcpp::rclcpp
+    std_srvs::std_srvs
+    robot_controller_msg::robot_controller_msg
 )
 
 install(TARGETS

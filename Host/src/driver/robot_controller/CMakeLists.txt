@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project(robot_controller)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -32,12 +32,14 @@ install(DIRECTORY
 file(GLOB_RECURSE robot_controller_node_src 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/robot_controller_node/*.cpp
 )
+
 add_executable(robot_controller ${robot_controller_node_src})
-ament_target_dependencies(robot_controller 
-    rclcpp 
-    std_srvs 
-    board_controller_msg
-    robot_controller_msg
+
+target_link_libraries(robot_controller PUBLIC
+    rclcpp::rclcpp
+    std_srvs::std_srvs
+    board_controller_msg::board_controller_msg
+    robot_controller_msg::robot_controller_msg
 )
 
 install(TARGETS

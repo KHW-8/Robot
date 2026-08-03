@@ -1,1 +1,1 @@
-pip install conan empy lark numpy
+pip install conan catkin_pkg empy lark numpy
