@@ -14,34 +14,37 @@ find_package(std_srvs REQUIRED)
 find_package(board_controller_msg REQUIRED)
 find_package(robot_controller_msg REQUIRED)
 
-## Includes ##
-set(include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/robot_controller_node
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/peripheral
-)
-
-include_directories(${include})
-
-## Launch files ##
+## Launches ##
+# Install all launch files
 install(DIRECTORY
     launch
     DESTINATION share/${PROJECT_NAME}
 )
 
-## Executables ##
+## Targets ##
+# Robot Controller
 file(GLOB_RECURSE robot_controller_node_src 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/robot_controller_node/*.cpp
 )
 
 add_executable(robot_controller ${robot_controller_node_src})
 
+target_include_directories(robot_controller PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/robot_controller_node
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/peripheral
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/utility
+)
+
 target_link_libraries(robot_controller PUBLIC
+    # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
+    # ArmBot
     board_controller_msg::board_controller_msg
     robot_controller_msg::robot_controller_msg
 )
 
+# Install all targets
 install(TARGETS
     robot_controller
     DESTINATION lib/${PROJECT_NAME}

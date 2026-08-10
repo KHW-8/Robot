@@ -1,1 +1,0 @@
-pip install conan catkin_pkg empy lark numpy

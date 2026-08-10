@@ -6,11 +6,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
-find_package(serial REQUIRED)
+# ROS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-find_package(robot_controller_msg REQUIRED)
+# Serial
+find_package(serial REQUIRED)
+# ArmBot
+find_package(board_controller_msg REQUIRED)
 
 
 ## Launch files ##
@@ -22,11 +25,11 @@ install(DIRECTORY
 ## Targets ##
 # Board Controller
 add_executable(board_controller 
-    src/board_controller_node.cpp
+    src/board_controller_node/board_controller_node.cpp
 )
 
 target_include_directories(board_controller PRIVATE
-    ${CMAKE_SOURCE_DIR}/include/board_controller
+    ${CMAKE_SOURCE_DIR}/include/board_controller_node
 )
 
 target_link_libraries(board_controller PUBLIC
@@ -35,8 +38,8 @@ target_link_libraries(board_controller PUBLIC
     std_srvs::std_srvs
     # Serial
     serial::serial
-    # Host
-    robot_controller_msg::robot_controller_msg
+    # ArmBot
+    board_controller_msg::board_controller_msg
 )
 
 install(TARGETS

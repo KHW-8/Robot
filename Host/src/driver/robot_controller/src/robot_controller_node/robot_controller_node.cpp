@@ -1,8 +1,8 @@
 #include "robot_controller_node.h"
 
-// Host
+// Robot Controller
 #include "peripheral.h"
-#include "board_controller_msg/msg/host_packet.hpp"
+#include "utility.hpp"
 
 RobotController::RobotController() 
     :Node("robot_controller")
@@ -10,8 +10,8 @@ RobotController::RobotController()
     initialize();
 }
 
-auto RobotController::set_bus_servo(robot_controller_msg::msg::Servos::UniquePtr msg) -> void {
-    for (auto& servo : msg->servos) {
+auto RobotController::set_bus_servo(const robot_controller_msg::msg::Servos::UniquePtr& msg) -> void {
+    for (const auto& servo : msg->servos) {
         RCLCPP_INFO(
             rclcpp::get_logger(""), 
             "Servo Id: %d, Position: %d°, Duration: %.2fs", 
@@ -22,7 +22,7 @@ auto RobotController::set_bus_servo(robot_controller_msg::msg::Servos::UniquePtr
     }
 }
 
-auto RobotController::set_buzzer(robot_controller_msg::msg::Buzzer msg) -> void {
+auto RobotController::set_buzzer(const robot_controller_msg::msg::Buzzer& msg) -> void {
     RCLCPP_INFO(
         rclcpp::get_logger(""), 
         "Frequency: %d, On Duration: %.2fs°, Off Duration: %.2fs, Repeat Count: %d", 
@@ -33,23 +33,28 @@ auto RobotController::set_buzzer(robot_controller_msg::msg::Buzzer msg) -> void 
     );
 }
 
-auto RobotController::set_led(robot_controller_msg::msg::LEDs msg) -> void {
-    auto _msg = board_controller_msg::msg::HostPacket();
-    // Header
-    _msg.host_packet.emplace_back(0x55);
-    _msg.host_packet.emplace_back(0x55);
-    // Peripheral ID
-    _msg.host_packet.emplace_back(static_cast<uint8_t>(Peripheral::LED));
-    // LED count
-    _msg.host_packet.emplace_back(1);
-    // Data length
-    _msg.host_packet.emplace_back(5);
+auto RobotController::set_led(const robot_controller_msg::msg::LEDs& msg) -> void {
+    auto _msg = board_controller_msg::msg::Packet();
 
-    for (auto& led : msg.leds) {
-        _msg.host_packet.emplace_back(led.id);
-        _msg.host_packet.emplace_back();
-        _msg.host_packet.emplace_back(led.repeat_count);
+    // Peripheral ID
+    _msg.peripheral_id = static_cast<uint8_t>(Peripheral::LED);
+    // LED count
+    _msg.array_data.emplace_back(msg.leds.size());
+    // LED information
+    for (const auto& led : msg.leds) {
+        
+        // Convert uint16_t and uint32_t numbers to byte vector. (Size equals to 2 or 4)
+        const auto& on_duration = to_byte_vector<uint32_t>(static_cast<uint32_t>(led.on_duration * 1000)); // Convert second to millisecond
+        const auto& off_duration = to_byte_vector<uint32_t>(static_cast<uint32_t>(led.off_duration * 1000)); // Convert second to millisecond
+        const auto& repeat_count = to_byte_vector<uint16_t>(led.repeat_count);
+
+        _msg.array_data.emplace_back(led.id);
+        _msg.array_data.insert(_msg.array_data.end(), on_duration.begin(), on_duration.end()); 
+        _msg.array_data.insert(_msg.array_data.end(), off_duration.begin(), off_duration.end()); 
+        _msg.array_data.insert(_msg.array_data.end(), repeat_count.begin(), repeat_count.end()); 
     }
+
+    this->pub_packet->publish(_msg);
 }
 
 auto RobotController::initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
@@ -59,33 +64,36 @@ auto RobotController::initialization_complete([[maybe_unused]]const std::shared_
 }
 
 auto RobotController::initialize() -> void {
-    // Create subscription of bus servo node 
-    this->bus_servo_sub = this->create_subscription<robot_controller_msg::msg::Servos>(
+    // Create the subscription of bus servo node 
+    this->sub_bus_servo = this->create_subscription<robot_controller_msg::msg::Servos>(
         "~/bus_servo", 
         10, 
         std::bind(&RobotController::set_bus_servo, this, std::placeholders::_1)
     );
 
-    // Create subscription of LED
-    this->buzzer_sub = this->create_subscription<robot_controller_msg::msg::Buzzer>(
+    // Create the subscription of buzzer
+    this->sub_buzzer = this->create_subscription<robot_controller_msg::msg::Buzzer>(
         "~/buzzer",
         10,
         std::bind(&RobotController::set_buzzer, this, std::placeholders::_1)
     );
 
-    // Create subscription of LED
-    this->led_sub = this->create_subscription<robot_controller_msg::msg::LEDs>(
+    // Create the subscription of LED
+    this->sub_led = this->create_subscription<robot_controller_msg::msg::LEDs>(
         "~/led",
         10,
         std::bind(&RobotController::set_led, this, std::placeholders::_1)
     );
 
     // Wait for board controller node
-    this->board_controller_client = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
-    this->board_controller_client.get()->wait_for_service();
+    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
+    this->cli_board_controller.get()->wait_for_service();
+
+    // Create the publisher of host packet
+    this->pub_packet = this->create_publisher<board_controller_msg::msg::Packet>("/board_controller/packet", 10);
 
     // Complete initialization and notify all other nodes
-    this->ini_srv = this->create_service<std_srvs::srv::Trigger>(
+    this->srv_ini = this->create_service<std_srvs::srv::Trigger>(
         "~/initialization_complete", 
         std::bind(&RobotController::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
     );

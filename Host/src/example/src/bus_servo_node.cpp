@@ -3,7 +3,7 @@
 // ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
-// Host
+// Bus Servo Node
 #include "robot_controller_msg/msg/servo.hpp"
 #include "robot_controller_msg/msg/servos.hpp"
 
@@ -50,7 +50,7 @@ void BusServoNode::set_servo(const size_t& id, const int&  position, const doubl
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
 
-    auto servo_controller = std::make_shared<BusServoNode>();
+    const auto& servo_controller = std::make_shared<BusServoNode>();
 
     try {
         while (rclcpp::ok()) {
