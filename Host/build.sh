@@ -1,12 +1,8 @@
-# Install all dependencies by Conan
-conan profile detect --force
-conan install dependency/conanfile.py --build=missing --output-folder install/conan --deployer=full_deploy
-
-# Source
+# Source ROS Enviroment
 source install/conan/conanrosenv.sh
 
 # Build
-colcon build --paths src/msg
+colcon build --paths src/msg/*
 source install/setup.sh
 colcon build
 

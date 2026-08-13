@@ -3,7 +3,7 @@
 // ROS2
 #include "rclcpp/rclcpp.hpp"
 #include "std_srvs/srv/trigger.hpp"
-// Host
+// Buzzer Node
 #include "robot_controller_msg/msg/buzzer.hpp"
 
 using namespace std::chrono_literals;
@@ -49,9 +49,8 @@ int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
 
     // Send buzzer state
-    auto controller = std::make_shared<BuzzerNode>();
-    std::this_thread::sleep_for(5s);
-    controller->set_buzzer(1500, 0.1, 0.5, 10);
+    const auto& node = std::make_shared<BuzzerNode>();
+    node->set_buzzer(1500, 0.1, 0.5, 10);
 
     rclcpp::shutdown(); // Shutdown
 

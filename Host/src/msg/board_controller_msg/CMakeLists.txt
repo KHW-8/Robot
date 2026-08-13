@@ -11,7 +11,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-    "msg/HostPacket.msg"
+    "msg/Packet.msg"
     DEPENDENCIES std_msgs
 )
 
