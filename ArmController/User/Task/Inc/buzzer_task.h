@@ -18,8 +18,8 @@ typedef enum {
 
 typedef struct {
     uint16_t frequency;
-    uint16_t on_duration;
-    uint16_t off_duration;
+    uint32_t on_duration;   // millisecond
+    uint32_t off_duration;  // millisecond
     uint16_t repeat_count;
     
     BuzzerTaskState state;

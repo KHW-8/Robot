@@ -20,8 +20,8 @@ typedef enum {
 typedef struct {
     struct {
         uint8_t led_id;
-        uint16_t on_duration;
-        uint16_t off_duration;
+        uint32_t on_duration;   // millisecond
+        uint32_t off_duration;  // millisecond
         uint16_t repeat_count;
         
         LEDTaskState state;

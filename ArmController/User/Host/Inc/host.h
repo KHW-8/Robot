@@ -53,6 +53,7 @@ void initialize_host_packet(HostPacket *packet, uint8_t peripheral);
 
 // Transmit/Receive
 Res transmit_packet_to_host(HostPacket *packet);
+Res transmit_byte_to_host(uint8_t byte);
 Res transmit_msg_to_host(const char* buf);
 
 void receive_packet_from_host();

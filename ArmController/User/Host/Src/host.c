@@ -30,7 +30,7 @@ Res transmit_packet_to_host(HostPacket *packet) {
     uint8_t  packet_length = PACKET_HEADER_COUNT + 2 + packet->data_length;
 
     uint8_t *pPacket = (uint8_t*)packet;
-    
+
     for (uint16_t i = 0; i < packet_length; i++) {
         // Wait until TDR is empty (TXE flag is set)
         uint32_t initial_tick = HAL_GetTick();
@@ -68,9 +68,18 @@ void initialize_host() {
     HAL_UARTEx_ReceiveToIdle_DMA(&huart1, rx_buf, HOST_PACKET_DATA_MAX_LENGTH);
 }
 
+Res transmit_byte_to_host(uint8_t byte) {
+    HAL_UART_Transmit_DMA(&huart1, (uint8_t*)&byte, 1);
+
+    return OK;
+}
+
 Res transmit_msg_to_host(const char *buf) {
-    HAL_UART_Transmit(&huart1, (uint8_t*)buf, strlen(buf), HAL_MAX_DELAY);
-    HAL_UART_Transmit(&huart1, (uint8_t*)"\n\r", 2, HAL_MAX_DELAY);
+    char msg[128];
+
+    int len = snprintf(msg, sizeof(msg), "%s\r\n", buf);
+
+    HAL_UART_Transmit(&huart1, (uint8_t*)msg, len, HAL_MAX_DELAY);
 
     return OK;
 }
@@ -193,8 +202,8 @@ void handle_led(HostPacket *packet) {
 
     for (uint8_t i = 0; i < request->led_count; i++) {
         task.leds[i].led_id = request->leds[i].led_id;
-        task.leds[i].on_duration = (uint32_t)(request->leds[i].on_duration * 1000);     // convert seconds to to milliseconds
-        task.leds[i].off_duration = (uint32_t)(request->leds[i].off_duration * 1000);   // convert seconds to to milliseconds
+        task.leds[i].on_duration = request->leds[i].on_duration; 
+        task.leds[i].off_duration = request->leds[i].off_duration; 
         task.leds[i].repeat_count = request->leds[i].repeat_count;
 
         task.leds[i].state = READY_TO_TURN_ON_LED;
