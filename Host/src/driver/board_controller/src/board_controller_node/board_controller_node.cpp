@@ -73,8 +73,7 @@ auto BoardController::transmit(const std::vector<uint8_t>& vector_data) -> void 
 
 auto BoardController::receive() -> void {
     while (true) {
-        const auto& packet = this->serial.read(100);
-        RCLCPP_INFO(rclcpp::get_logger(""), "Size: %ld", packet.size());
+        const auto& packet = this->serial.readline();
         if (packet.empty())
             continue;;
 
@@ -98,10 +97,8 @@ auto BoardController::receive_packet(const board_controller_msg::msg::Packet& ms
 }
 
 auto BoardController::initialize() -> void {
-    RCLCPP_INFO(rclcpp::get_logger(""), "Initializing...");
-
     // Connect to board
-    connect("/dev/ttyUSB0");
+    connect("/dev/ttyACM0");
 
     // Create a thread which receiving packet from board
     this->thread_receive = std::thread(&BoardController::receive, this);
