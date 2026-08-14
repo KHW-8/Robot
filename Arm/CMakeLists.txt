@@ -43,14 +43,32 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add sources to executable
+file(GLOB_RECURSE User_Srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Host/Src/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Misc/Src/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Peripherals/Src/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Task/Src/*.c
+)
+
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
+    ${User_Srcs}
 )
 
 # Add include paths
+set(User_Include_Dirs
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Host/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Misc/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Peripherals/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/User/Task/Inc
+)
+
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    ${User_Include_Dirs}
 )
+
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
@@ -65,4 +83,10 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+)
+
+# Add custom command to automatically generate .bin and .hex files post-build
+add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_PROJECT_NAME}.bin
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_PROJECT_NAME}.hex
 )
