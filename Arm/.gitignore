@@ -12,7 +12,7 @@ Core
 Drivers
 mxproject
 mx.scratch
-.clangd
+# .clangd
 .vscode
 .settings
 
