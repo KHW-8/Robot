@@ -1,4 +1,21 @@
+## Include ##
+# File
+.mxproject
+CMakePresets.json
+startup_stm32l476xx.s
+STM32L476xx_FLASH.ld
+
+# Folder
 build
+cmake
+Core
+Drivers
+mxproject
 mx.scratch
+.clangd
 .vscode
 .settings
+
+## Exclude ##
+# File
+!Core/Src/main.c
