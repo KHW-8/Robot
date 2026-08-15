@@ -1,2 +1,2 @@
-# Host
-Raspberry Pi 5
+# Core
+Board: Raspberry Pi 5

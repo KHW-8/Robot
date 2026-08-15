@@ -1,2 +1,2 @@
-# Arm Controller
-STM32F103
+# Arm 
+Board: STM32F103RBT6

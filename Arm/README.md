@@ -1,1 +1,2 @@
-NUCLEO-L476RG
+# Arm
+Board: NUCLEO-L476RG
