@@ -4,7 +4,7 @@
 /* STD */
 #include <string.h>
 #include <stdio.h>
-/* ArmController */
+/* Arm */
 //// Core
 #include "usart.h"
 //// User

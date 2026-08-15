@@ -1,7 +1,7 @@
 #include "led.h"
 
 //////////* Headers *//////////
-/* ArmController */
+/* Arm */
 //// Core
 #include "main.h"
 //// User

@@ -1,6 +1,6 @@
 // STD
 #include <stdio.h>
-// ArmController
+// Arm
 #include "host.h"
 #include "bus_servo.h"
 

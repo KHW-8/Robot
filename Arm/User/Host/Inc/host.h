@@ -8,7 +8,7 @@
 /* STD */
 #include <stdint.h>
 #include <stdbool.h>
-/* ArmController */
+/* Arm */
 #include "global.h"
 ///////////////////////////////
 

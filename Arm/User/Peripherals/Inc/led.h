@@ -6,7 +6,7 @@
 
 //////////* Headers *//////////
 /* STD */
-/* ArmController */
+/* Arm */
 //// Task
 #include "led_task.h"
 //// Global

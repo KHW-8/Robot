@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-/* ArmController */
+/* Arm */
 // Core
 #include "main.h"
 #include "usart.h"

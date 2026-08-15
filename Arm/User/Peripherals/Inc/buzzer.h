@@ -6,7 +6,7 @@
 
 //////////* Headers *//////////
 /* STD */
-/* ArmController */
+/* Arm */
 //// Task
 #include "buzzer_task.h"
 //// Global

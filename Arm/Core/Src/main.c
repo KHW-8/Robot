@@ -29,7 +29,7 @@
 /* STD */
 #include <stdint.h>
 #include <stdio.h>
-/* ArmController */
+/* Arm */
 //// User
 // Host
 #include "host.h"
