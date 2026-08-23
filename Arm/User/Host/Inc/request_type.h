@@ -17,14 +17,14 @@ typedef struct {
     uint8_t servo_count;
     struct {
         uint8_t servo_id;
-        int16_t angle;
-        uint32_t duration;
+        uint8_t angle;
+        uint16_t duration;
     } servos[];
 } BusServoAngleSettingRequest;
 
 /* Buzzer */
 typedef struct {
-    uint16_t frequency;
+    uint32_t frequency;
     uint32_t on_duration;   // millisecond
     uint32_t off_duration;  // millisecond
     uint16_t repeat_count;

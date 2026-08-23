@@ -35,7 +35,8 @@ static uint8_t rx_buf[HOST_PACKET_DATA_MAX_LENGTH];
 /////////////////////////////////////////////////
 
 
-//////////* Functions *//////////
+////////////////////* Functions *////////////////////
+
 Res transmit_packet_to_host(HostPacket *packet) {
     uint8_t  packet_length = PACKET_HEADER_COUNT + 2 + packet->data_length;
 
@@ -146,6 +147,8 @@ void handle_bus_servo(HostPacket *packet) {
         BusServoAngleSettingRequest *request = (BusServoAngleSettingRequest*)&packet->data;
 
         for (uint8_t i = 0; i < request->servo_count; i++) {
+            transmit_msg_to_host("Seting servo angle...");
+
             set_bus_servo_angle_and_duration(
                 request->servos[i].servo_id,
                 request->servos[i].angle,
@@ -168,7 +171,7 @@ void handle_bus_servo(HostPacket *packet) {
         for (uint8_t i = 0; i < request->servo_count; i++) {
             if (read_bus_servo_angle(request->servos_id[i], &angle) == OK) {
                 report->servos[report->servo_count].servo_id = request->servos_id[i];
-                report->servos[report->servo_count++].angle = angle;
+
             }
         }
 
@@ -239,4 +242,4 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     } 
 }
 
-/////////////////////////////////
+/////////////////////////////////////////////////////

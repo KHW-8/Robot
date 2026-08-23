@@ -5,15 +5,12 @@
 /* STD */
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 /* Arm */
 // Core
 #include "main.h"
 #include "usart.h"
 // User
-#include "host.h"
 // Misc
 #include "check_sum.h"
 
@@ -123,6 +120,7 @@ void initialize_bus_servo() {
     // Init bus servo packet controller
     packet_controller.time_out = 100;
 
+    // Set to read mode (set bus servo pin)
     HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
 }
 
@@ -141,14 +139,14 @@ Res read_bus_servo_id() {
     return OK;
 }
 
-Res read_bus_servo_angle(uint32_t id, int16_t *angle) {
+Res read_bus_servo_angle(uint8_t id, int16_t *angle) {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, id, 3, READ_BUS_SERVO_ANGLE);
 
     packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length);
 
     // Send packet
-    uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
+    Res ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
     if (ret != OK)
         return ERR;
 
@@ -157,17 +155,17 @@ Res read_bus_servo_angle(uint32_t id, int16_t *angle) {
     return OK;
 }
 
-Res set_bus_servo_angle_and_duration(uint32_t id, int16_t angle, uint32_t duration) {
+Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duration) {
     // Check arguments
     angle = angle > 240 ? 240 : angle;
-    angle = angle * 1000 / 240;
+    uint16_t _angle = angle * 1000 / 240;
     duration = duration > 30000 ? 30000 : duration;
 
     // Create packet
-    initialize_bus_servo_packet(&packet_controller.tx_packet, id, 4, SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION);
+    initialize_bus_servo_packet(&packet_controller.tx_packet, id, 7, SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION);
 
-    packet_controller.tx_packet.params[0] = (uint8_t)angle;
-    packet_controller.tx_packet.params[1] = (uint8_t)(angle >> 8);
+    packet_controller.tx_packet.params[0] = (uint8_t)_angle;
+    packet_controller.tx_packet.params[1] = (uint8_t)(_angle >> 8);
     packet_controller.tx_packet.params[2] = (uint8_t)duration;
     packet_controller.tx_packet.params[3] = (uint8_t)(duration >> 8);
 

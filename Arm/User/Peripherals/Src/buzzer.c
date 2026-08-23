@@ -1,12 +1,25 @@
 #include "buzzer.h"
 
+//////////* Headers *//////////
+/* Arm */
+//// Core
 #include "main.h"
+//// User
+// Host
+#include "host.h"
+///////////////////////////////
+
+///////////////* Global Variable *///////////////
 
 static BuzzerTaskQueue task_queue;
 
 static BuzzerTask current_task;
 
 static uint32_t last_tick = 0;
+
+/////////////////////////////////////////////////
+
+////////////////////* Functions *////////////////////
 
 void test_buzzer(void) {
     // Beep
@@ -19,6 +32,8 @@ void test_buzzer(void) {
 }
 
 void initialize_buzzer(void) {
+    initialize_buzzer_task_queue(&task_queue);
+
     turn_buzzer_off();
 }
 
@@ -112,3 +127,5 @@ void turn_buzzer_on() {
 void turn_buzzer_off() {
     HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET);
 }
+
+/////////////////////////////////////////////////////

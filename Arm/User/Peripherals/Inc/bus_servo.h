@@ -122,8 +122,8 @@ bool handle_bus_servo_rx_buffer(uint8_t rx_buf);
 
 // Basic  Operation
 Res read_bus_servo_id();
-Res read_bus_servo_angle(uint32_t id, int16_t *angle);
+Res read_bus_servo_angle(uint8_t id, int16_t *angle);
 
-Res set_bus_servo_angle_and_duration(uint32_t id, int16_t angle, uint32_t duration);
+Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duration);
 
 #endif

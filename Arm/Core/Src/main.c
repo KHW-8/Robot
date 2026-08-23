@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
+#include "stm32l4xx_hal.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -113,6 +114,7 @@ int main(void)
 
   // Init host
   initialize_host();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -123,7 +125,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
     receive_packet_from_host();
     execute_led_task();
-    // execute_buzzer_task();
+    execute_buzzer_task();
   }
   /* USER CODE END 3 */
 }
