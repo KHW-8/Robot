@@ -5,6 +5,9 @@
 #include "rclcpp/executors.hpp"
 #include "peripheral.h"
 #include "utility.hpp"
+#include <cstdint>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 
 RobotController::RobotController() 
     :Node("robot_controller")
@@ -40,7 +43,7 @@ auto RobotController::set_bus_servo(const robot_controller_msg::msg::BusServoReq
             packet.array_data.emplace_back(servo.id);
     } else {
         for (const auto& servo : request->servos) {
-            const auto& duration = to_byte_vector<uint16_t>(static_cast<uint32_t>(servo.duration * 1000)); // Convert second to millisecond
+            const auto& duration = to_byte_vector<decltype(servo.duration)>(servo.duration); // Convert second to millisecond
             
             // Servo ID
             packet.array_data.emplace_back(servo.id);
@@ -67,10 +70,10 @@ auto RobotController::set_buzzer(const robot_controller_msg::msg::BuzzerRequest&
     );
 
     // Convert uint16_t and uint32_t numbers to byte vector. (Size equals to 2 or 4)
-    const auto& freq = to_byte_vector<uint32_t>(request.frequency); 
-    const auto& on_duration = to_byte_vector<uint32_t>(static_cast<uint32_t>(request.on_duration * 1000)); // Convert second to millisecond
-    const auto& off_duration = to_byte_vector<uint32_t>(static_cast<uint32_t>(request.off_duration * 1000)); // Convert second to millisecond
-    const auto& repeat_count = to_byte_vector<uint16_t>(request.repeat_count);
+    const auto& freq = to_byte_vector<decltype(request.frequency)>(request.frequency); 
+    const auto& on_duration = to_byte_vector<decltype(request.on_duration)>(request.on_duration); 
+    const auto& off_duration = to_byte_vector<decltype(request.off_duration)>(request.off_duration);
+    const auto& repeat_count = to_byte_vector<decltype(request.repeat_count)>(request.repeat_count);
 
     // Create a board controller packet
     auto packet = board_controller_msg::msg::Packet();
@@ -109,9 +112,9 @@ auto RobotController::set_led(const robot_controller_msg::msg::LEDRequest& reque
         );
             
         // Convert uint16_t and uint32_t numbers to byte vector. (Size equals to 2 or 4)
-        const auto& on_duration = to_byte_vector<uint32_t>(static_cast<uint32_t>(led.on_duration * 1000)); // Convert second to millisecond
-        const auto& off_duration = to_byte_vector<uint32_t>(static_cast<uint32_t>(led.off_duration * 1000)); // Convert second to millisecond
-        const auto& repeat_count = to_byte_vector<uint16_t>(led.repeat_count);
+        const auto& on_duration = to_byte_vector<decltype(led.on_duration)>(led.on_duration); 
+        const auto& off_duration = to_byte_vector<decltype(led.off_duration)>(led.off_duration); 
+        const auto& repeat_count = to_byte_vector<decltype(led.repeat_count)>(led.repeat_count);
 
         packet.array_data.emplace_back(led.id);
         packet.array_data.insert(packet.array_data.end(), on_duration.begin(), on_duration.end()); 

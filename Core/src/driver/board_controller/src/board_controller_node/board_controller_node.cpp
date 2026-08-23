@@ -68,9 +68,9 @@ auto BoardController::transmit(const std::vector<uint8_t>& vector_data) -> void 
         stream << std::hex << std::showbase << (int)data << " ";
     RCLCPP_INFO(rclcpp::get_logger(""), "%s", stream.str().c_str());
 
-    this->serial.write(vector_data);
+    const auto& bytes = this->serial.write(vector_data);
 
-    RCLCPP_INFO(rclcpp::get_logger(""), "Transmitted.");
+    RCLCPP_INFO(rclcpp::get_logger(""), "Transmitted: %ld", bytes);
 }
 
 /** 
