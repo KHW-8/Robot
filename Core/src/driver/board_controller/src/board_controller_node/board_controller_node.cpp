@@ -57,20 +57,26 @@ auto BoardController::close() -> void {
 }
 
 auto BoardController::initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, 
-                             const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 
+                                              const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 
 {
     response.get()->success = true;
 }
 
 auto BoardController::transmit(const std::vector<uint8_t>& vector_data) -> void {
+    std::stringstream stream;
     for (const auto& data : vector_data) 
-        RCLCPP_INFO(rclcpp::get_logger(""), "%x", data);
+        stream << std::hex << std::showbase << (int)data << " ";
+    RCLCPP_INFO(rclcpp::get_logger(""), "%s", stream.str().c_str());
 
     this->serial.write(vector_data);
 
     RCLCPP_INFO(rclcpp::get_logger(""), "Transmitted.");
 }
 
+/** 
+ * @brief
+ * @retval
+ */
 auto BoardController::receive() -> void {
     while (true) {
         const auto& packet = this->serial.readline();
@@ -83,7 +89,6 @@ auto BoardController::receive() -> void {
 
 
 auto BoardController::receive_packet(const board_controller_msg::msg::Packet& msg) -> void {
-
     // Initialize a vector with header
     std::vector<uint8_t> vec{ 0x55, 0x55 }; 
     // Peripheral ID

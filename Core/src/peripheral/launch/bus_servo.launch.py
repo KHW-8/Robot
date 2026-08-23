@@ -13,13 +13,13 @@ def generate_launch_description():
         ])
     )
 
-    led_node = Node(
-        package="example",
-        executable="led",
+    bus_servo_node = Node(
+        package="peripheral",
+        executable="bus_servo",
         output="screen"
     )
 
     return LaunchDescription([
         robot_controller_launch,
-        led_node
+        bus_servo_node
     ])

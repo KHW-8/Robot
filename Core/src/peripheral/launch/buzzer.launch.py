@@ -14,7 +14,7 @@ def generate_launch_description():
     )
 
     buzzer_node = Node(
-        package="example",
+        package="peripheral",
         executable="buzzer",
         output="screen"
     )

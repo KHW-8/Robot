@@ -2,12 +2,9 @@
 #include <stdint.h>
 // C++ STD
 #include <vector>
+#include <array>
 
 template<std::integral T>
-auto to_byte_vector(const T& data) -> std::vector<uint8_t> {
-    std::vector<uint8_t> v;
-    for (size_t i = 0; i < sizeof(T); i++) 
-        v.emplace_back(static_cast<uint8_t>(data >> (8 * i)));
-
-    return v;
+auto to_byte_vector(const T& data) -> std::array<uint8_t, sizeof(T)> {
+    return std::bit_cast<std::array<uint8_t, sizeof(T)>>(data);
 }
