@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(example)
+project(peripheral)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -19,7 +19,12 @@ install(DIRECTORY
 )
 
 ## Executables ##
-add_executable(bus_servo src/bus_servo_node.cpp)
+# Bus Servo Node #
+add_executable(bus_servo src/bus_servo_node/bus_servo_node.cpp)
+
+target_include_directories(bus_servo PUBLIC
+    ${CMAKE_SOURCE_DIR}/include/bus_servo_node
+)
 
 target_link_libraries(bus_servo PUBLIC
     rclcpp::rclcpp
@@ -27,7 +32,12 @@ target_link_libraries(bus_servo PUBLIC
     robot_controller_msg::robot_controller_msg
 )
 
-add_executable(buzzer src/buzzer_node.cpp)
+# Buzzer #
+add_executable(buzzer src/buzzer_node/buzzer_node.cpp)
+
+target_include_directories(buzzer PUBLIC
+    ${CMAKE_SOURCE_DIR}/include/buzzer_node
+)
 
 target_link_libraries(buzzer PUBLIC
     rclcpp::rclcpp
@@ -35,8 +45,12 @@ target_link_libraries(buzzer PUBLIC
     robot_controller_msg::robot_controller_msg
 )
 
-add_executable(led src/led_node.cpp)
+# LED #
+add_executable(led src/led_node/led_node.cpp)
 
+target_include_directories(led PUBLIC
+    ${CMAKE_SOURCE_DIR}/include/led_node
+)
 
 target_link_libraries(led PUBLIC
     rclcpp::rclcpp

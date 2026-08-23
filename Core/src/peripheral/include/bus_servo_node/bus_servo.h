@@ -1,7 +1,8 @@
 #ifndef BUS_SERVO_H
 #define BUS_SERVO_H
 
-enum class BusServoCMD{
+enum class BusServoCMD {
+    NONE = 0,
     SET_ROTAION_ANGLE_AND_DURATION = 1,
     READ_ROTAION_ANGLE_AND_DURATION = 2,
     SET_ROTAION_ANGLE_AND_DURATION_WITH_WAITING_STATE  = 7,
