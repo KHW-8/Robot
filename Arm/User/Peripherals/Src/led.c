@@ -121,16 +121,16 @@ void execute_led_task() {
 
 void turn_led_on(uint8_t id) {
     switch (id) {
-        case _LED: break;
-        case _LED1: HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); break;
+        case _BOARD_LED: HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_SET); break;
+        case _LED1: HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); break;
         default: break;
     }
 }
 
 void turn_led_off(uint8_t id) {
     switch (id) {
-        case _LED: break;
-        case _LED1: HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); break;
+        case _BOARD_LED: HAL_GPIO_WritePin(BOARD_LED_GPIO_Port, BOARD_LED_Pin, GPIO_PIN_RESET); break;
+        case _LED1: HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET); break;
         default: break;
     }
 }
@@ -139,6 +139,6 @@ void turn_led_off(uint8_t id) {
 void initialize_led() {
     initialize_led_task_queue(&task_queue);
 
-    turn_led_off(_LED);
+    turn_led_off(_BOARD_LED);
     turn_led_off(_LED1);
 }

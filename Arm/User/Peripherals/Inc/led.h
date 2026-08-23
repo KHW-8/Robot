@@ -14,8 +14,9 @@
 ///////////////////////////////
 
 typedef enum {
-    _LED,
+    _BOARD_LED,
     _LED1,
+    _LED2
 } LED_ID;
 
 // Initialize
