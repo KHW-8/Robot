@@ -107,12 +107,12 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  // Init peripherals
+  // Initialize peripherals
   initialize_bus_servo();
   initialize_buzzer();
   initialize_led();
 
-  // Init host
+  // Initialize host
   initialize_host();
 
   /* USER CODE END 2 */
@@ -124,6 +124,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     receive_packet_from_host();
+    execute_bus_servo_task();
     execute_led_task();
     execute_buzzer_task();
   }

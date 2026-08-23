@@ -9,6 +9,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 /* Arm */
+//// Task
+#include "bus_servo_task.h"
+//// Global
 #include "global.h"
 ///////////////////////////////
 
@@ -110,20 +113,21 @@ typedef struct {
 
 void initialize_bus_servo_packet(BusServoPacket *packet, uint8_t servo_id, uint8_t data_length, uint8_t cmd);
 
-// Transmit/Receive packet
-Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only);
-Res receive_packet_from_bus_servo(); // It is not suggested to call this function manually
+// Basic  Operation
+Res read_bus_servo_id();
+Res read_bus_servo_angle(uint8_t id, uint8_t *angle);
+
+Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duration);
 
 // Initiation
 void initialize_bus_servo();
 
-// Handle
-bool handle_bus_servo_rx_buffer(uint8_t rx_buf);
+// Task
+Res add_bus_servo_task(BusServoTask task);
+void execute_bus_servo_task();
 
-// Basic  Operation
-Res read_bus_servo_id();
-Res read_bus_servo_angle(uint8_t id, int16_t *angle);
-
-Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duration);
+// Transmit/Receive packet
+Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only);
+Res receive_packet_from_bus_servo(); // It is not suggested to call this function manually
 
 #endif

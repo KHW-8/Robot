@@ -10,7 +10,7 @@ typedef struct {
     uint8_t cmd;
     uint8_t servo_count;
     uint8_t servos_id[];
-} BusServoAngleQueryRequest;
+} BusServoQueryRequest;
 
 typedef struct {
     uint8_t cmd;
@@ -18,15 +18,15 @@ typedef struct {
     struct {
         uint8_t servo_id;
         uint8_t angle;
-        uint16_t duration;
+        float duration;
     } servos[];
 } BusServoAngleSettingRequest;
 
 /* Buzzer */
 typedef struct {
-    uint32_t frequency;
-    uint32_t on_duration;   // millisecond
-    uint32_t off_duration;  // millisecond
+    uint16_t frequency;
+    float on_duration;   // millisecond
+    float off_duration;  // millisecond
     uint16_t repeat_count;
 } BuzzerRequest;
 
@@ -35,8 +35,8 @@ typedef struct {
     uint8_t led_count;
     struct {
         uint8_t led_id;
-        uint32_t on_duration;   // millisecond
-        uint32_t off_duration;  // millisecond
+        float on_duration;   // millisecond
+        float off_duration;  // millisecond
         uint16_t repeat_count;
     } leds[];
 } LEDRequest;

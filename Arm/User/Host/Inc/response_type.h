@@ -11,7 +11,7 @@ typedef struct {
     uint8_t servo_count;
     struct {
         uint8_t servo_id;
-        int16_t angle;
+        uint8_t angle;
     } servos[];
 } BusServoAngleResponse;
 

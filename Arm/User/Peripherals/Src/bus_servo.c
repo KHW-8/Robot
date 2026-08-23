@@ -8,26 +8,43 @@
 #include <string.h>
 /* Arm */
 // Core
+#include "bus_servo_task.h"
 #include "main.h"
 #include "usart.h"
 // User
+#include "host.h"
+#include "response_type.h"
 // Misc
 #include "check_sum.h"
 
 ///////////////////////////////
 
+
+//////////* Extern *//////////
+
+extern HostPacketController host_packet_controller;
+
+///////////////////////////////
+
+
 ///////////////* Macro *///////////////
 #define USART_BUS_SERVO USART1
 ///////////////////////////////////////
+
 
 //////////* Global Variable *//////////
 
 static BusServoPacketController packet_controller;
 
+static BusServoTaskQueue task_queue;
+
+static BusServoTask current_task;
+
 static uint8_t rx_buf;
 
 static UART_HandleTypeDef *huart_bus_servo = &huart1;
 ///////////////////////////////////////
+
 
 //////////* Functions *//////////
 
@@ -117,13 +134,70 @@ Res receive_packet_from_bus_servo() {
 }
 
 void initialize_bus_servo() {
-    // Init bus servo packet controller
+    // Initialize bus servo task queue
+    initialize_bus_servo_task_queue(&task_queue);
+
+    // Initialize bus servo packet controller
     packet_controller.time_out = 100;
 
     // Set to read mode (set bus servo pin)
     HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
 }
 
+Res add_bus_servo_task(BusServoTask task) {
+    if (task_queue.isFull(&task_queue) == true)
+        return ERR;
+
+    if (task_queue.push(&task_queue, task) == false)
+        return ERR;
+
+    return OK;
+}
+
+void execute_bus_servo_task() {
+    if (task_queue.pop(&task_queue, &current_task) == false)
+        return;
+
+    // Initialize a packet to tranmit to the host
+    initialize_host_packet(&host_packet_controller.tx_packet, BUS_SERVO);
+
+    switch (current_task.cmd) {
+    case SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION: {
+        for (uint8_t i = 0; i < current_task.servo_count; i++) {
+            set_bus_servo_angle_and_duration(
+                current_task.servos[i].servo_id,
+                current_task.servos[i].angle,
+                current_task.servos[i].duration
+            );
+        }
+    } break;
+    case READ_BUS_SERVO_ANGLE: {
+        // Create a response to tranmit to core
+        BusServoAngleResponse *response = (BusServoAngleResponse*)host_packet_controller.tx_packet.data;
+        response->cmd = current_task.cmd;
+        response->result = OK;
+        response->servo_count = current_task.servo_count;
+
+        uint8_t angle = 0; 
+
+        // Read multiple bus servos' rotation angle
+        for (uint8_t i = 0; i < current_task.servo_count; i++) {
+            if (read_bus_servo_angle(current_task.servos_id[i], &angle) == OK) {
+                response->servos[i].servo_id = current_task.servos_id[i];
+                response->servos[i].angle = angle;
+            }
+        }
+
+        // Set host packet length
+        packet_controller.tx_packet.data_length = 3 + sizeof(response->servos[0]) * response->servo_count;
+    } break;
+    default:
+        return;
+    }
+
+    // Transmit packet to host
+    transmit_packet_to_host(&host_packet_controller.tx_packet);
+}
 
 Res read_bus_servo_id() {
     // Create packet
@@ -139,7 +213,7 @@ Res read_bus_servo_id() {
     return OK;
 }
 
-Res read_bus_servo_angle(uint8_t id, int16_t *angle) {
+Res read_bus_servo_angle(uint8_t id, uint8_t *angle) {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, id, 3, READ_BUS_SERVO_ANGLE);
 
@@ -150,15 +224,16 @@ Res read_bus_servo_angle(uint8_t id, int16_t *angle) {
     if (ret != OK)
         return ERR;
 
-    *angle = (int16_t)(*(int16_t*)packet_controller.rx_packet.params) * 240 / 1000;
+    *angle = (uint8_t)(*(uint16_t*)packet_controller.rx_packet.params) * 240 / 1000;
 
     return OK;
 }
 
 Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duration) {
-    // Check arguments
-    angle = angle > 240 ? 240 : angle;
+    // Check angle
     uint16_t _angle = angle * 1000 / 240;
+    _angle = _angle > 1000 ? 1000 : _angle;
+    // Check duration
     duration = duration > 30000 ? 30000 : duration;
 
     // Create packet

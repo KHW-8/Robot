@@ -1,14 +1,25 @@
 #ifndef BUS_SERVO_TASK_H
 #define BUS_SERVO_TASK_H
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
+/////* Macro */////
+#define BUS_SERVO_COUNT 6
 #define BUS_SERVO_TASK_QUEUE_CAPACITY 10
 
 typedef struct {
-    
+    uint8_t cmd;
+    uint8_t servo_count;
+    bool read_only;
+    union {
+        struct {
+            uint8_t servo_id;
+            uint8_t angle;
+            uint16_t duration;
+        } servos[BUS_SERVO_COUNT];
+        uint8_t servos_id[BUS_SERVO_COUNT];
+    };
 } BusServoTask;
 
 typedef struct _BusServoTaskQueue BusServoTaskQueue;

@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 /* Task */
-#define LED_COUNT 2
+#define LED_COUNT 3
 #define LED_TASK_QUEUE_CAPACITY 5
 
 typedef enum {

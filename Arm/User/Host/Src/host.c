@@ -27,9 +27,9 @@
 ///////////////////////////////////////
 
 ///////////////* Global Variable *///////////////
-static UART_HandleTypeDef *huart_host = &huart2;
+HostPacketController host_packet_controller;
 
-static HostPacketController packet_controller;
+static UART_HandleTypeDef *huart_host = &huart2;
 
 static uint8_t rx_buf[HOST_PACKET_DATA_MAX_LENGTH];
 /////////////////////////////////////////////////
@@ -73,8 +73,8 @@ void initialize_host_packet(HostPacket *packet, uint8_t peripheral) {
 }
 
 void initialize_host() {
-    packet_controller.rx_finished = false;
-    packet_controller.rx_state = ERR;
+    host_packet_controller.rx_finished = false;
+    host_packet_controller.rx_state = OK;
 
     HAL_UARTEx_ReceiveToIdle_DMA(huart_host, rx_buf, HOST_PACKET_DATA_MAX_LENGTH);
 }
@@ -96,13 +96,13 @@ Res transmit_msg_to_host(const char *buf) {
 }
 
 void receive_packet_from_host() {
-    if (!packet_controller.rx_finished)
+    if (!host_packet_controller.rx_finished)
         return;
 
-    if (packet_controller.rx_state == OK)
-        handle_host_packet(&packet_controller.rx_packet);
+    if (host_packet_controller.rx_state == OK)
+        handle_host_packet(&host_packet_controller.rx_packet);
 
-    packet_controller.rx_finished = false;
+    host_packet_controller.rx_finished = false;
     HAL_UARTEx_ReceiveToIdle_DMA(huart_host, rx_buf, HOST_PACKET_DATA_MAX_LENGTH);
 }
 
@@ -111,13 +111,13 @@ void receive_packet_from_host() {
  */
 Res handle_host_rx_buffer(uint8_t packet_len) {
     // Write data from rx_buf to rx_packet
-    uint8_t *pPacket = (uint8_t*)&packet_controller.rx_packet;
+    uint8_t *pPacket = (uint8_t*)&host_packet_controller.rx_packet;
 
     for (uint32_t i = 0; i < packet_len; i++) 
         pPacket[i] = rx_buf[i];
 
-    if (packet_controller.rx_packet.header1 != HOST_PACKET_HEADER &&
-        packet_controller.rx_packet.header2 != HOST_PACKET_HEADER)
+    if (host_packet_controller.rx_packet.header1 != HOST_PACKET_HEADER &&
+        host_packet_controller.rx_packet.header2 != HOST_PACKET_HEADER)
         return ERR;
 
     return OK;
@@ -136,66 +136,67 @@ void handle_host_packet(HostPacket *packet) {
 }
 
 /** 
- * @brief
+ * @brief None
  */
 void handle_bus_servo(HostPacket *packet) {
-    // Init a packet to tranmit to the host
-    initialize_host_packet(&packet_controller.tx_packet, BUS_SERVO);
+    // Create a task
+    BusServoTask task;
 
-    switch ((int32_t)packet->data[0]) {
+    switch (packet->data[0]) {
     case SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION: {
-        BusServoAngleSettingRequest *request = (BusServoAngleSettingRequest*)&packet->data;
+        // Parse request
+        BusServoAngleSettingRequest *request = (BusServoAngleSettingRequest*)packet->data;
+        task.cmd = request->cmd;
+        task.servo_count = request->servo_count;
+        task.servo_count = request->cmd;
+        task.read_only = false;
 
         for (uint8_t i = 0; i < request->servo_count; i++) {
-            transmit_msg_to_host("Seting servo angle...");
+            // Check duration
+            uint16_t duration = (uint16_t)(request->servos[i].duration * 1000);
+            duration = duration > 30000 ? 30000 : duration;
 
-            set_bus_servo_angle_and_duration(
-                request->servos[i].servo_id,
-                request->servos[i].angle,
-                request->servos[i].duration
-            );
+            task.servos[i].servo_id = request->servos[i].servo_id;
+            task.servos[i].angle = request->servos[i].angle;
+            task.servos[i].duration = duration;
         }
     } break;
     case READ_BUS_SERVO_ANGLE: {
         // Parse request
-        BusServoAngleQueryRequest *request = (BusServoAngleQueryRequest*)&packet->data;
-        
-        // Execute task
-        int16_t angle = 0; 
+        BusServoQueryRequest *request = (BusServoQueryRequest*)packet->data;
+        task.cmd = request->cmd;
+        task.servo_count = request->cmd;
+        task.servo_count = request->servo_count;
+        task.read_only = true;
 
-        // Create a report to transmit to the host
-        BusServoAngleResponse *report = (BusServoAngleResponse*)&packet_controller.tx_packet.data;
-        report->cmd = packet->data[0];
-        report->result = OK;
-
-        for (uint8_t i = 0; i < request->servo_count; i++) {
-            if (read_bus_servo_angle(request->servos_id[i], &angle) == OK) {
-                report->servos[report->servo_count].servo_id = request->servos_id[i];
-
-            }
-        }
-
-        // Set host packet data length
-        packet_controller.tx_packet.data_length = 3 + sizeof(report->servos[0]) * report->servo_count;
+        for (uint8_t i = 0; i < request->servo_count; i++) 
+            task.servos_id[i] = request->servos_id[i];
     } break;
-    default: break;
+    default:
+        return;
     }
-
-    // Transmit packet to host
-    transmit_packet_to_host(&packet_controller.tx_packet);
+   
+    add_bus_servo_task(task);
 }
 
 /** 
  * @brief
- * @retval
+ * @retval None
  */
 void handle_buzzer(HostPacket *packet) {
-    BuzzerRequest *request = (BuzzerRequest*)&packet->data;
+    // Parse request
+    BuzzerRequest *request = (BuzzerRequest*)packet->data;
 
+    // Check on duration
+    uint32_t on_duration = (uint32_t)(request->on_duration * 1000);
+    // Check off duration
+    uint32_t off_duration = (uint32_t)(request->off_duration * 1000);
+
+    // Create a task
     BuzzerTask task;
     task.frequency = request->frequency;
-    task.on_duration = request->on_duration;
-    task.off_duration = request->off_duration;
+    task.on_duration = on_duration;
+    task.off_duration = off_duration;
     task.repeat_count = request->repeat_count;
     task.state = READY_TO_TURN_ON_BUZZER;
     
@@ -208,15 +209,22 @@ void handle_buzzer(HostPacket *packet) {
  * @retval None
  */
 void handle_led(HostPacket *packet) {
-    LEDRequest *request = (LEDRequest*)&packet->data;
+    // Parse request
+    LEDRequest *request = (LEDRequest*)packet->data;
 
+    // Create a task
     LEDTask task;
     task.led_count = request->led_count;
 
     for (uint8_t i = 0; i < request->led_count; i++) {
+        // Check on duration
+        uint32_t on_duration = (uint32_t)(request->leds[i].on_duration * 1000);
+        // Check off duration
+        uint32_t off_duration = (uint32_t)(request->leds[i].off_duration * 1000);
+
         task.leds[i].led_id = request->leds[i].led_id;
-        task.leds[i].on_duration = request->leds[i].on_duration; 
-        task.leds[i].off_duration = request->leds[i].off_duration; 
+        task.leds[i].on_duration = on_duration; 
+        task.leds[i].off_duration = off_duration; 
         task.leds[i].repeat_count = request->leds[i].repeat_count;
 
         task.leds[i].state = READY_TO_TURN_ON_LED;
@@ -236,9 +244,11 @@ void handle_led(HostPacket *packet) {
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart->Instance == USART_HOST) {
         if (handle_host_rx_buffer(Size) == OK)  
-            packet_controller.rx_state = OK;
+            host_packet_controller.rx_state = OK;
+        else
+            host_packet_controller.rx_state = ERR;
         
-        packet_controller.rx_finished = true;        
+        host_packet_controller.rx_finished = true;        
     } 
 }
 
