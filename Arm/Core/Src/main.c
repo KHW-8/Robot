@@ -28,12 +28,10 @@
 
 //////////* Headers *//////////
 /* STD */
-#include <stdint.h>
-#include <stdio.h>
 /* Arm */
 //// User
-// Host
-#include "host.h"
+// Core
+#include "core.h"
 // Peripheral
 #include "buzzer.h"
 #include "bus_servo.h"
@@ -112,8 +110,8 @@ int main(void)
   initialize_buzzer();
   initialize_led();
 
-  // Initialize host
-  initialize_host();
+  // Initialize core
+  initialize_core();
 
   /* USER CODE END 2 */
 
@@ -123,7 +121,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    receive_packet_from_host();
+    receive_packet_from_core();
     execute_bus_servo_task();
     execute_led_task();
     execute_buzzer_task();

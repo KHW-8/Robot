@@ -5,8 +5,8 @@
 //// Core
 #include "main.h"
 //// User
-// Host
-#include "host.h"
+// Core
+#include "core.h"
 ///////////////////////////////
 
 static LEDTaskQueue task_queue;

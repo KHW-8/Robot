@@ -1,7 +1,6 @@
 #ifndef LED_TASK_H
 #define LED_TASK_H
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 

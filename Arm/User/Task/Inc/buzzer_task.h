@@ -1,7 +1,6 @@
 #ifndef BUZZER_TASK_H
 #define BUZZER_TASK_H
 
-#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 

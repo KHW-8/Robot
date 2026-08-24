@@ -1,16 +1,15 @@
-#include "host.h"
+#include "core.h"
 
 //////////* Headers *//////////
 /* STD */
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 /* Arm */
 //// Core
 #include "usart.h"
 //// User
-// Host
+// Core
 #include "request_type.h"
-#include "response_type.h"
 // Peripherals
 #include "bus_servo.h"
 #include "buzzer.h"
@@ -23,21 +22,21 @@
 ///////////////////////////////
 
 ///////////////* Macro *///////////////
-#define USART_HOST USART2
+#define USART_CORE USART2
 ///////////////////////////////////////
 
 ///////////////* Global Variable *///////////////
-HostPacketController host_packet_controller;
+CorePacketController core_packet_controller;
 
-static UART_HandleTypeDef *huart_host = &huart2;
+static UART_HandleTypeDef *huart_core = &huart2;
 
-static uint8_t rx_buf[HOST_PACKET_DATA_MAX_LENGTH];
+static uint8_t rx_buf[CORE_PACKET_DATA_MAX_LENGTH];
 /////////////////////////////////////////////////
 
 
 ////////////////////* Functions *////////////////////
 
-Res transmit_packet_to_host(HostPacket *packet) {
+Res transmit_packet_to_core(CorePacket *packet) {
     uint8_t  packet_length = PACKET_HEADER_COUNT + 2 + packet->data_length;
 
     uint8_t *pPacket = (uint8_t*)packet;
@@ -45,18 +44,18 @@ Res transmit_packet_to_host(HostPacket *packet) {
     for (uint16_t i = 0; i < packet_length; i++) {
         // Wait until TDR is empty (TXE flag is set)
         uint32_t initial_tick = HAL_GetTick();
-        while (!__HAL_UART_GET_FLAG(huart_host, UART_FLAG_TXE)) {
+        while (!__HAL_UART_GET_FLAG(huart_core, UART_FLAG_TXE)) {
             if (HAL_GetTick() - initial_tick > 10) 
                 return ERR;
         }
         
-        huart_host->Instance->TDR = (pPacket[i] & 0xFF);
+        huart_core->Instance->TDR = (pPacket[i] & 0xFF);
     }
 
 
     // Wait until TDR is empty (TC flag is set)
     uint32_t initial_tick = HAL_GetTick();
-    while (!__HAL_UART_GET_FLAG(huart_host, UART_FLAG_TC)) {
+    while (!__HAL_UART_GET_FLAG(huart_core, UART_FLAG_TC)) {
         if (HAL_GetTick() - initial_tick > 10) 
             return ERR;
     }
@@ -64,60 +63,60 @@ Res transmit_packet_to_host(HostPacket *packet) {
     return OK;
 }
 
-void initialize_host_packet(HostPacket *packet, uint8_t peripheral) {
-    packet->header1 = HOST_PACKET_HEADER;
-    packet->header2 = HOST_PACKET_HEADER;
+void initialize_core_packet(CorePacket *packet, uint8_t peripheral) {
+    packet->header1 = CORE_PACKET_HEADER;
+    packet->header2 = CORE_PACKET_HEADER;
     packet->peripheral = peripheral;
     packet->data_length = 0;
     memset(packet->data, 0, sizeof(packet->data));
 }
 
-void initialize_host() {
-    host_packet_controller.rx_finished = false;
-    host_packet_controller.rx_state = OK;
+void initialize_core() {
+    core_packet_controller.rx_finished = false;
+    core_packet_controller.rx_state = OK;
 
-    HAL_UARTEx_ReceiveToIdle_DMA(huart_host, rx_buf, HOST_PACKET_DATA_MAX_LENGTH);
+    HAL_UARTEx_ReceiveToIdle_DMA(huart_core, rx_buf, CORE_PACKET_DATA_MAX_LENGTH);
 }
 
-Res transmit_byte_to_host(uint8_t byte) {
-    HAL_UART_Transmit_DMA(huart_host, (uint8_t*)&byte, 1);
+Res transmit_byte_to_core(uint8_t byte) {
+    HAL_UART_Transmit_DMA(huart_core, (uint8_t*)&byte, 1);
 
     return OK;
 }
 
-Res transmit_msg_to_host(const char *buf) {
+Res transmit_msg_to_core(const char *buf) {
     char msg[128];
 
     int len = snprintf(msg, sizeof(msg), "%s\r\n", buf);
 
-    HAL_UART_Transmit(huart_host, (uint8_t*)msg, len, HAL_MAX_DELAY);
+    HAL_UART_Transmit(huart_core, (uint8_t*)msg, len, HAL_MAX_DELAY);
 
     return OK;
 }
 
-void receive_packet_from_host() {
-    if (!host_packet_controller.rx_finished)
+void receive_packet_from_core() {
+    if (!core_packet_controller.rx_finished)
         return;
 
-    if (host_packet_controller.rx_state == OK)
-        handle_host_packet(&host_packet_controller.rx_packet);
+    if (core_packet_controller.rx_state == OK)
+        handle_core_packet(&core_packet_controller.rx_packet);
 
-    host_packet_controller.rx_finished = false;
-    HAL_UARTEx_ReceiveToIdle_DMA(huart_host, rx_buf, HOST_PACKET_DATA_MAX_LENGTH);
+    core_packet_controller.rx_finished = false;
+    HAL_UARTEx_ReceiveToIdle_DMA(huart_core, rx_buf, CORE_PACKET_DATA_MAX_LENGTH);
 }
 
 /** 
  * @brief
  */
-Res handle_host_rx_buffer(uint8_t packet_len) {
+Res handle_core_rx_buffer(uint8_t packet_len) {
     // Write data from rx_buf to rx_packet
-    uint8_t *pPacket = (uint8_t*)&host_packet_controller.rx_packet;
+    uint8_t *pPacket = (uint8_t*)&core_packet_controller.rx_packet;
 
     for (uint32_t i = 0; i < packet_len; i++) 
         pPacket[i] = rx_buf[i];
 
-    if (host_packet_controller.rx_packet.header1 != HOST_PACKET_HEADER &&
-        host_packet_controller.rx_packet.header2 != HOST_PACKET_HEADER)
+    if (core_packet_controller.rx_packet.header1 != CORE_PACKET_HEADER &&
+        core_packet_controller.rx_packet.header2 != CORE_PACKET_HEADER)
         return ERR;
 
     return OK;
@@ -126,7 +125,7 @@ Res handle_host_rx_buffer(uint8_t packet_len) {
 /** 
  * @brief
  */
-void handle_host_packet(HostPacket *packet) {
+void handle_core_packet(CorePacket *packet) {
     switch (packet->peripheral) {
         case BUS_SERVO: handle_bus_servo(packet); break;
         case BUZZER: handle_buzzer(packet); break;
@@ -138,7 +137,7 @@ void handle_host_packet(HostPacket *packet) {
 /** 
  * @brief None
  */
-void handle_bus_servo(HostPacket *packet) {
+void handle_bus_servo(CorePacket *packet) {
     // Create a task
     BusServoTask task;
 
@@ -183,7 +182,7 @@ void handle_bus_servo(HostPacket *packet) {
  * @brief
  * @retval None
  */
-void handle_buzzer(HostPacket *packet) {
+void handle_buzzer(CorePacket *packet) {
     // Parse request
     BuzzerRequest *request = (BuzzerRequest*)packet->data;
 
@@ -208,7 +207,7 @@ void handle_buzzer(HostPacket *packet) {
  * @brief
  * @retval None
  */
-void handle_led(HostPacket *packet) {
+void handle_led(CorePacket *packet) {
     // Parse request
     LEDRequest *request = (LEDRequest*)packet->data;
 
@@ -236,19 +235,19 @@ void handle_led(HostPacket *packet) {
 
 
 /** 
- * @brief Handle received data from host
+ * @brief Handle received data from core
  * @param
  *      @arg huart
  *      @arg Size
  */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-    if (huart->Instance == USART_HOST) {
-        if (handle_host_rx_buffer(Size) == OK)  
-            host_packet_controller.rx_state = OK;
+    if (huart->Instance == USART_CORE) {
+        if (handle_core_rx_buffer(Size) == OK)  
+            core_packet_controller.rx_state = OK;
         else
-            host_packet_controller.rx_state = ERR;
+            core_packet_controller.rx_state = ERR;
         
-        host_packet_controller.rx_finished = true;        
+        core_packet_controller.rx_finished = true;        
     } 
 }
 

@@ -1,0 +1,6 @@
+CompileFlags:
+  Add:
+    - --target=arm-none-eabi
+    - >-
+      -IC:/Users/17605/AppData/Local/stm32cube/bundles/st-arm-clang/21.1.1+st.7/lib/clang-runtimes/arm-none-eabi/include
+  CompilationDatabase: build/Release

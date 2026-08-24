@@ -1,5 +1,7 @@
 #include "led_task.h"
 
+#include <stdlib.h>
+
 void initialize_led_task(LEDTask *task) {
     task->led_count = 0;
 }

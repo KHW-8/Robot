@@ -12,7 +12,7 @@
 #include "main.h"
 #include "usart.h"
 // User
-#include "host.h"
+#include "core.h"
 #include "response_type.h"
 // Misc
 #include "check_sum.h"
@@ -22,7 +22,7 @@
 
 //////////* Extern *//////////
 
-extern HostPacketController host_packet_controller;
+extern CorePacketController core_packet_controller;
 
 ///////////////////////////////
 
@@ -158,8 +158,8 @@ void execute_bus_servo_task() {
     if (task_queue.pop(&task_queue, &current_task) == false)
         return;
 
-    // Initialize a packet to tranmit to the host
-    initialize_host_packet(&host_packet_controller.tx_packet, BUS_SERVO);
+    // Initialize a packet to tranmit to the core
+    initialize_core_packet(&core_packet_controller.tx_packet, BUS_SERVO);
 
     switch (current_task.cmd) {
     case SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION: {
@@ -173,7 +173,7 @@ void execute_bus_servo_task() {
     } break;
     case READ_BUS_SERVO_ANGLE: {
         // Create a response to tranmit to core
-        BusServoAngleResponse *response = (BusServoAngleResponse*)host_packet_controller.tx_packet.data;
+        BusServoAngleResponse *response = (BusServoAngleResponse*)core_packet_controller.tx_packet.data;
         response->cmd = current_task.cmd;
         response->result = OK;
         response->servo_count = current_task.servo_count;
@@ -188,15 +188,15 @@ void execute_bus_servo_task() {
             }
         }
 
-        // Set host packet length
+        // Set core packet length
         packet_controller.tx_packet.data_length = 3 + sizeof(response->servos[0]) * response->servo_count;
     } break;
     default:
         return;
     }
 
-    // Transmit packet to host
-    transmit_packet_to_host(&host_packet_controller.tx_packet);
+    // Transmit packet to core
+    transmit_packet_to_core(&core_packet_controller.tx_packet);
 }
 
 Res read_bus_servo_id() {
