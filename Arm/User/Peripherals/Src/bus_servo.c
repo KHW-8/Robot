@@ -1,6 +1,6 @@
 #include "bus_servo.h"
 
-//////////* Headers *//////////
+//////////* Header *//////////
 
 /* STD */
 #include <stdbool.h>
@@ -9,6 +9,7 @@
 /* Arm */
 // Core
 #include "bus_servo_task.h"
+#include "global.h"
 #include "main.h"
 #include "usart.h"
 // User
@@ -154,9 +155,20 @@ Res add_bus_servo_task(BusServoTask task) {
     return OK;
 }
 
+bool check_bus_servo_task_finished(BusServoTask *task) {
+    for (uint8_t i = 0; i < task->servo_count; i++) {
+        if (task->servos[i].state != BUS_SERVO_SUSPEND_MODE)
+            return false;
+    }
+
+    return true;
+}
+
 void execute_bus_servo_task() {
-    if (task_queue.pop(&task_queue, &current_task) == false)
-        return;
+    if (check_bus_servo_task_finished(&current_task)) {
+        if (task_queue.pop(&task_queue, &current_task) == false)
+            return;
+    }
 
     // Initialize a packet to tranmit to the core
     initialize_core_packet(&core_packet_controller.tx_packet, BUS_SERVO);
@@ -169,6 +181,8 @@ void execute_bus_servo_task() {
                 current_task.servos[i].angle,
                 current_task.servos[i].duration
             );
+
+            current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
         }
     } break;
     case READ_BUS_SERVO_ANGLE: {
@@ -182,10 +196,12 @@ void execute_bus_servo_task() {
 
         // Read multiple bus servos' rotation angle
         for (uint8_t i = 0; i < current_task.servo_count; i++) {
-            if (read_bus_servo_angle(current_task.servos_id[i], &angle) == OK) {
-                response->servos[i].servo_id = current_task.servos_id[i];
+            if (read_bus_servo_angle(current_task.servos[i].servo_id, &angle) == OK) {
+                response->servos[i].servo_id = current_task.servos[i].servo_id;
                 response->servos[i].angle = angle;
             }
+
+            current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
         }
 
         // Set core packet length
@@ -203,7 +219,7 @@ Res read_bus_servo_id() {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, 1, 3, READ_BUS_SERVO_ID);
 
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length);
+    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
@@ -217,7 +233,7 @@ Res read_bus_servo_angle(uint8_t id, uint8_t *angle) {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, id, 3, READ_BUS_SERVO_ANGLE);
 
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length);
+    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     Res ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
@@ -244,7 +260,7 @@ Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duratio
     packet_controller.tx_packet.params[2] = (uint8_t)duration;
     packet_controller.tx_packet.params[3] = (uint8_t)(duration >> 8);
 
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length);
+    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
@@ -302,7 +318,7 @@ bool handle_rx_buffer(uint8_t rx_buf) {
             packet_controller.rx_state = RECEIVING_HEADER1;
 
             // Generate the received packet checksum
-            packet_controller.rx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.rx_packet, packet_controller.rx_packet.data_length);
+            packet_controller.rx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.rx_packet, packet_controller.rx_packet.data_length, PACKET_HEADER_COUNT);
 
             /*
              * Verify checksum.

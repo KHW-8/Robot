@@ -4,7 +4,7 @@
 #ifndef BUZZER_H
 #define BUZZER_H
 
-//////////* Headers *//////////
+//////////* Header *//////////
 /* STD */
 /* Arm */
 //// Task

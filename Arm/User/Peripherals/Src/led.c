@@ -1,12 +1,11 @@
 #include "led.h"
 
-//////////* Headers *//////////
+//////////* Header *//////////
 /* Arm */
 //// Core
 #include "main.h"
 //// User
 // Core
-#include "core.h"
 ///////////////////////////////
 
 static LEDTaskQueue task_queue;
@@ -38,7 +37,7 @@ Res add_led_task(LEDTask task) {
  */
 bool check_led_task_finished(LEDTask *task) {
     for (uint8_t i = 0; i < task->led_count; i++) {
-        if (task->leds[i].state != LED_IDLE_MODE)
+        if (task->leds[i].state != LED_SUSPEND_MODE)
             return false;
     }
 
@@ -52,7 +51,7 @@ void execute_led_task() {
     uint32_t current_tick = HAL_GetTick();
     uint32_t duration = current_tick - last_tick;
 
-    if (duration <= 0) {
+    if (duration == 0) {
         last_tick = current_tick;
         return;
     }
@@ -78,7 +77,7 @@ void execute_led_task() {
                 } else {
                     turn_led_off(current_task.leds[i].led_id);
 
-                    current_task.leds[i].state = LED_IDLE_MODE;
+                    current_task.leds[i].state = LED_SUSPEND_MODE;
                 }
 
                 current_task.leds[i].tick_count = 0;
@@ -107,9 +106,9 @@ void execute_led_task() {
                 if (current_task.leds[i].repeat_count != 0) 
                     current_task.leds[i].state = READY_TO_TURN_ON_LED;
                 else
-                    current_task.leds[i].state = LED_IDLE_MODE;
+                    current_task.leds[i].state = LED_SUSPEND_MODE;
             } break;
-            case LED_IDLE_MODE:
+            case LED_SUSPEND_MODE:
                 break;
             default:
                 break;

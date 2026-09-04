@@ -1,15 +1,18 @@
 #include "core.h"
 
-//////////* Headers *//////////
+//////////* Header *//////////
 /* STD */
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 /* Arm */
 //// Core
+#include "bus_servo_task.h"
 #include "usart.h"
 //// User
-// Core
+// Misc
 #include "request_type.h"
+#include "check_sum.h"
 // Peripherals
 #include "bus_servo.h"
 #include "buzzer.h"
@@ -71,6 +74,20 @@ void initialize_core_packet(CorePacket *packet, uint8_t peripheral) {
     memset(packet->data, 0, sizeof(packet->data));
 }
 
+Res check_packet(CorePacket *packet) {
+    // Check header
+    if (core_packet_controller.rx_packet.header1 != CORE_PACKET_HEADER &&
+        core_packet_controller.rx_packet.header2 != CORE_PACKET_HEADER)
+        return ERR;
+
+    // Check checksum
+    uint8_t checksum = generate_check_sum(packet->data, packet->data_length, 0);
+    if (packet->checksum != checksum)
+        return ERR;
+
+    return OK;
+}
+
 void initialize_core() {
     core_packet_controller.rx_finished = false;
     core_packet_controller.rx_state = OK;
@@ -115,8 +132,7 @@ Res handle_core_rx_buffer(uint8_t packet_len) {
     for (uint32_t i = 0; i < packet_len; i++) 
         pPacket[i] = rx_buf[i];
 
-    if (core_packet_controller.rx_packet.header1 != CORE_PACKET_HEADER &&
-        core_packet_controller.rx_packet.header2 != CORE_PACKET_HEADER)
+    if (check_packet(&core_packet_controller.rx_packet) != OK)
         return ERR;
 
     return OK;
@@ -158,6 +174,7 @@ void handle_bus_servo(CorePacket *packet) {
             task.servos[i].servo_id = request->servos[i].servo_id;
             task.servos[i].angle = request->servos[i].angle;
             task.servos[i].duration = duration;
+            task.servos[i].state = BUS_SERVO_READY_MODE;
         }
     } break;
     case READ_BUS_SERVO_ANGLE: {
@@ -168,8 +185,10 @@ void handle_bus_servo(CorePacket *packet) {
         task.servo_count = request->servo_count;
         task.read_only = true;
 
-        for (uint8_t i = 0; i < request->servo_count; i++) 
-            task.servos_id[i] = request->servos_id[i];
+        for (uint8_t i = 0; i < request->servo_count; i++) {
+            task.servos[i].servo_id = request->servos_id[i];
+            task.servos[i].state = BUS_SERVO_READY_MODE;
+        }
     } break;
     default:
         return;

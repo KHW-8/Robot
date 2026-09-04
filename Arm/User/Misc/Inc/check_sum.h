@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-uint8_t generate_check_sum(uint8_t *packet, uint32_t data_length);
+uint8_t generate_check_sum(uint8_t *packet, uint32_t data_length, uint32_t offset);
 
 #endif
