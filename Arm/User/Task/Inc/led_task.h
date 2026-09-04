@@ -13,7 +13,7 @@ typedef enum {
     LED_ON,
     LED_OFF,
     COMPLETE_A_LED_BLINK,
-    LED_IDLE_MODE
+    LED_SUSPEND_MODE
 } LEDTaskState;
 
 typedef struct {

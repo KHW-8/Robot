@@ -4,7 +4,7 @@
 #ifndef CORE_H_
 #define CORE_H_
 
-//////////* Headers *//////////
+//////////* Header *//////////
 /* STD */
 #include <stdint.h>
 #include <stdbool.h>
@@ -12,11 +12,14 @@
 #include "global.h"
 ///////////////////////////////
 
+///////////////* Macro *///////////////
+
 // Core packet
 #define CORE_PACKET_HEADER 0x55
 #define CORE_PACKET_HEADER_COUNT 2
 #define CORE_PACKET_DATA_MAX_LENGTH 1024
 
+///////////////////////////////////////
 typedef enum {
     NO_PERIPHERAL,
     BUS_SERVO,
@@ -30,6 +33,7 @@ typedef struct {
     uint8_t header1;
     uint8_t header2;
     uint8_t peripheral;
+    uint8_t checksum;
     uint8_t data_length;
     uint8_t data[CORE_PACKET_DATA_MAX_LENGTH];
 } CorePacket;
@@ -47,6 +51,11 @@ typedef struct {
 } CorePacketController;
 
 
+///////////////* Function *///////////////
+
+// Check
+Res check_packet(CorePacket *packet);
+
 // Initiation
 void initialize_core();
 void initialize_core_packet(CorePacket *packet, uint8_t peripheral);
@@ -58,11 +67,13 @@ Res transmit_msg_to_core(const char* buf);
 
 void receive_packet_from_core();
 
-// Handle
+// Handler
 Res handle_core_rx_buffer(uint8_t packet_len);
 void handle_core_packet(CorePacket *packet);
 void handle_bus_servo(CorePacket *packet);
 void handle_buzzer(CorePacket *packet);
 void handle_led(CorePacket *packet);
+
+//////////////////////////////////////////
 
 #endif

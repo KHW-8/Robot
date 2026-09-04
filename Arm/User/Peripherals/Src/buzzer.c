@@ -1,12 +1,11 @@
 #include "buzzer.h"
 
-//////////* Headers *//////////
+//////////* Header *//////////
 /* Arm */
 //// Core
 #include "main.h"
 //// User
 // Core
-#include "core.h"
 ///////////////////////////////
 
 ///////////////* Global Variable *///////////////
@@ -48,7 +47,7 @@ Res add_buzzer_task(BuzzerTask task) {
 }
 
 bool check_buzzer_task_finished(BuzzerTask *task) {
-    return task->state == BUZZER_IDLE_MODE;
+    return task->state == BUZZER_SUSPEND_MODE;
 }
 
 void execute_buzzer_task() {
@@ -80,7 +79,7 @@ void execute_buzzer_task() {
             } else {
                 turn_buzzer_off();
 
-                current_task.state = BUZZER_IDLE_MODE;
+                current_task.state = BUZZER_SUSPEND_MODE;
             }
 
             current_task.tick_count = 0;
@@ -109,9 +108,9 @@ void execute_buzzer_task() {
             if (current_task.repeat_count != 0) 
                 current_task.state = READY_TO_TURN_ON_BUZZER;
             else
-                current_task.state = BUZZER_IDLE_MODE;
+                current_task.state = BUZZER_SUSPEND_MODE;
         } break;
-        case BUZZER_IDLE_MODE:
+        case BUZZER_SUSPEND_MODE:
             break;
         default:
             break;

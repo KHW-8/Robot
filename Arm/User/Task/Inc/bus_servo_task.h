@@ -7,19 +7,24 @@
 /////* Macro */////
 #define BUS_SERVO_COUNT 6
 #define BUS_SERVO_TASK_QUEUE_CAPACITY 10
+///////////////////
+
+typedef enum {
+    BUS_SERVO_READY_MODE,
+    BUS_SERVO_SUSPEND_MODE
+} BusServoTaskState;
 
 typedef struct {
     uint8_t cmd;
     uint8_t servo_count;
     bool read_only;
-    union {
-        struct {
-            uint8_t servo_id;
-            uint8_t angle;
-            uint16_t duration;
-        } servos[BUS_SERVO_COUNT];
-        uint8_t servos_id[BUS_SERVO_COUNT];
-    };
+    struct {
+        uint8_t servo_id;
+        uint8_t angle;
+        uint16_t duration;
+
+        BusServoTaskState state;
+    } servos[BUS_SERVO_COUNT];
 } BusServoTask;
 
 typedef struct _BusServoTaskQueue BusServoTaskQueue;

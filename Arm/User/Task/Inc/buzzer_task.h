@@ -12,7 +12,7 @@ typedef enum {
     BUZZER_ON,
     BUZZER_OFF,
     COMPLETE_A_BUZZER_OPERATION,
-    BUZZER_IDLE_MODE
+    BUZZER_SUSPEND_MODE
 } BuzzerTaskState;
 
 typedef struct {

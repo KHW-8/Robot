@@ -4,7 +4,7 @@
 #ifndef BUS_SERVO_H_
 #define BUS_SERVO_H_
 
-//////////* Headers *//////////
+//////////* Header *//////////
 /* STD */
 #include <stdint.h>
 #include <stdbool.h>
@@ -124,6 +124,7 @@ void initialize_bus_servo();
 
 // Task
 Res add_bus_servo_task(BusServoTask task);
+bool check_bus_servo_task_finished(BusServoTask *task);
 void execute_bus_servo_task();
 
 // Transmit/Receive packet
