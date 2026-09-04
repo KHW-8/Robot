@@ -1,5 +1,4 @@
 from conan import ConanFile
-from conan.tools.cmake import cmake_layout
 from conan.tools.files import copy
 import os
 
@@ -12,7 +11,13 @@ class Dependency(ConanFile):
     }
 
     def requirements(self):
+        self.requires("boost/1.91.0")
+        self.requires("gtest/1.17.0")
+        self.requires("opencv/4.14.0")
+        self.requires("qt/6.11.1")
         self.requires("serial/1.2.1")
+        self.requires("xkbcommon/1.6.0", override=True)
+
 
     def generate(self):
         # Copy dependencies to build folder

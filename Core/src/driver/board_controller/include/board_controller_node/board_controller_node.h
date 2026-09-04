@@ -1,10 +1,10 @@
 #ifndef BOARD_CONTROLLER_H
 #define BOARD_CONTROLLER_H
 
-// Serial
-#include "serial/serial.h"
+// Boost
+#include "boost/asio/serial_port.hpp"
 // ROS2
-#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/node.hpp"
 #include "std_srvs/srv/trigger.hpp"
 #include "board_controller_msg/msg/packet.hpp"
 
@@ -14,11 +14,8 @@ public:
     ~BoardController();
 
 public:
-    // Port
-    static auto list_ports() -> void;
-
     // Connection
-    auto connect(const std::string& port) -> void;
+    auto connect(const std::string& port) -> bool;
     auto close() -> void;
 
     // Transmit / Receive
@@ -42,8 +39,10 @@ private:
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
 
-    // Serial
-    serial::Serial serial;
+    // Serial port
+    boost::asio::io_context io;
+
+    boost::asio::serial_port serial;
 
     // Thread
     std::thread thread_receive;

@@ -1,38 +1,46 @@
 #include "board_controller_node.h"
 
+// Boost
+#include "boost/asio.hpp"
+#include "boost/asio/streambuf.hpp"
+#include "boost/asio/serial_port_base.hpp"
+#include "boost/system/system_error.hpp"
+#include "boost/throw_exception.hpp"
+// ROS2
+#include "rclcpp/executors.hpp"
+#include "rclcpp/logger.hpp"
+#include "rclcpp/logging.hpp"
+// STD
+#include <istream>
+#include <string>
+//
+#include "utility.hpp"
+
 BoardController::BoardController() 
-    :Node("board_controller")
+    :Node("board_controller"),
+    serial(io)
 {
+    this->serial = boost::asio::serial_port(io);
+
     initialize();
 }
 
 BoardController::~BoardController() {
-    if (this->serial.isOpen())
+    if (this->serial.is_open())
         close();
 }
 
-auto BoardController::list_ports() -> void {
-    const auto& devices = serial::list_ports();
-    for (const auto& device : devices) {
-        RCLCPP_INFO(
-            rclcpp::get_logger(""),
-            "Port: %s, Description: %s, Hardware ID: %s", 
-            device.port.c_str(),
-            device.description.c_str(),
-            device.hardware_id.c_str()
-        );
-    }
-}
-
-auto BoardController::connect(const std::string& port) -> void {
-    auto timeout = serial::Timeout::simpleTimeout(1000);
-
+auto BoardController::connect(const std::string& port) -> bool {
     try {
-        this->serial.setPort(port);
-        this->serial.setBaudrate(115200);
-        this->serial.setTimeout(timeout);
-        this->serial.open();
-    } catch (const serial::IOException& e) {
+        this->serial.open(port);
+
+        using namespace boost::asio;
+        this->serial.set_option(serial_port_base::character_size(8));
+        this->serial.set_option(serial_port_base::baud_rate(115200));
+        this->serial.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
+        this->serial.set_option(serial_port_base::parity(serial_port_base::parity::none));
+        this->serial.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
+    } catch (const boost::wrapexcept<boost::system::system_error>& e) {
         RCLCPP_ERROR(
             rclcpp::get_logger(""), 
             "File: %s, Line: %d, Error: %s", 
@@ -40,16 +48,24 @@ auto BoardController::connect(const std::string& port) -> void {
             __LINE__, 
             e.what()
         );
-        return;
+
+        return false;
+    } catch (...) {
+        RCLCPP_ERROR(rclcpp::get_logger(""), "Unknown error!");
+
+        return false;
     }
 
-    if (!this->serial.isOpen())
+    if (!this->serial.is_open()) {
         RCLCPP_ERROR(
             rclcpp::get_logger(""), 
             "File: %s, Line: %d, Error: Failed to open",
             __FILE__,
             __LINE__
         );
+    }
+
+    return true;
 }
 
 auto BoardController::close() -> void {
@@ -68,7 +84,7 @@ auto BoardController::transmit(const std::vector<uint8_t>& vector_data) -> void 
         stream << std::hex << std::showbase << (int)data << " ";
     RCLCPP_INFO(rclcpp::get_logger(""), "%s", stream.str().c_str());
 
-    const auto& bytes = this->serial.write(vector_data);
+    const auto& bytes = boost::asio::write(this->serial, boost::asio::buffer(vector_data));
 
     RCLCPP_INFO(rclcpp::get_logger(""), "Transmitted: %ld", bytes);
 }
@@ -78,8 +94,15 @@ auto BoardController::transmit(const std::vector<uint8_t>& vector_data) -> void 
  * @retval
  */
 auto BoardController::receive() -> void {
+    boost::asio::streambuf streambuf;
+
     while (true) {
-        const auto& packet = this->serial.readline();
+        boost::asio::read_until(this->serial, streambuf, "\n");
+
+        std::istream is(&streambuf);
+        std::string packet;
+        std::getline(is, packet);
+
         if (packet.empty())
             continue;;
 
@@ -93,6 +116,8 @@ auto BoardController::receive_packet(const board_controller_msg::msg::Packet& ms
     std::vector<uint8_t> vec{ 0x55, 0x55 }; 
     // Peripheral ID
     vec.emplace_back(msg.peripheral_id);
+    // Checksum
+    vec.emplace_back(generate_checksum(msg.array_data.to_vector()));
     // Data Length
     vec.emplace_back(msg.array_data.size());
     // Data
@@ -103,10 +128,15 @@ auto BoardController::receive_packet(const board_controller_msg::msg::Packet& ms
 
 auto BoardController::initialize() -> void {
     // Connect to board
-    connect("/dev/ttyACM0");
+    const auto& res = connect("/dev/ttyACM0");
 
     // Create a thread which receiving packet from board
-    this->thread_receive = std::thread(&BoardController::receive, this);
+    if (res)
+        this->thread_receive = std::thread(&BoardController::receive, this);
+    else {
+        RCLCPP_ERROR(rclcpp::get_logger(""), "Connection error!");
+        return;
+    }
 
     // Create subscription of packet
     this->sub_packet = this->create_subscription<board_controller_msg::msg::Packet>(

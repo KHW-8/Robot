@@ -6,14 +6,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
+# ArmBot
+find_package(board_controller_msg REQUIRED)
+# Boost
+find_package(Boost CONFIG  REQUIRED)
 # ROS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-# Serial
-find_package(serial REQUIRED)
-# ArmBot
-find_package(board_controller_msg REQUIRED)
 
 
 ## Launch files ##
@@ -30,14 +30,15 @@ add_executable(board_controller
 
 target_include_directories(board_controller PRIVATE
     ${CMAKE_SOURCE_DIR}/include/board_controller_node
+    ${CMAKE_SOURCE_DIR}/../../global/include/utility
 )
 
 target_link_libraries(board_controller PUBLIC
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    # Serial
-    serial::serial
+    # Boost
+    Boost::boost
     # ArmBot
     board_controller_msg::board_controller_msg
 )

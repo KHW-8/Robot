@@ -1,13 +1,16 @@
 #include "robot_controller_node.h"
 
+// C STD
+#include <cstdint>
+// C++ STD
+// ROS2
+#include "rclcpp/executors.hpp"
+#include "rclcpp/logger.hpp"
+#include "rclcpp/logging.hpp"
 // Robot Controller
 #include "board_controller_msg/msg/packet.hpp"
-#include "rclcpp/executors.hpp"
 #include "peripheral.h"
 #include "utility.hpp"
-#include <cstdint>
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
 
 RobotController::RobotController() 
     :Node("robot_controller")

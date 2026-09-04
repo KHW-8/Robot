@@ -32,7 +32,7 @@ add_executable(robot_controller ${robot_controller_node_src})
 target_include_directories(robot_controller PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/robot_controller_node
     ${CMAKE_CURRENT_SOURCE_DIR}/include/peripheral
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/utility
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../global/include/utility
 )
 
 target_link_libraries(robot_controller PUBLIC
