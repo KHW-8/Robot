@@ -29,8 +29,8 @@ target_include_directories(kinematics_calculator PRIVATE
     ${CMAKE_SOURCE_DIR}/include/kinematics_calculator
     ${CMAKE_SOURCE_DIR}/include/kinematics_calculator/DH_parameter
     ${CMAKE_SOURCE_DIR}/include/kinematics_calculator/math
-    ${CMAKE_SOURCE_DIR}/include/kinematics_calculator/kinematics/forward_kinematics
-    ${CMAKE_SOURCE_DIR}/../global/include/math
+    ${CMAKE_SOURCE_DIR}/include/kinematics_calculator/kinematics
+    ${CMAKE_SOURCE_DIR}/../../global/include/math
 )
 
 target_link_libraries(kinematics_calculator PRIVATE

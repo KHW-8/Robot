@@ -6,7 +6,9 @@
 //// Kinematics
 #include "forward_kinematics.h"
 //// Global
+#include "inverse_kinematics.h"
 #include "math.hpp"
+#include "std_srvs/srv/trigger.hpp"
 
 /* ROS */
 #include <rclcpp/executors.hpp>
@@ -34,7 +36,7 @@ KinematicsCalculator::KinematicsCalculator()
 }
 
 auto KinematicsCalculator::initialization_complete([[maybe_unused]]std::shared_ptr<std_srvs::srv::Trigger::Request> request, 
-                                                        std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 
+                                                   std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 
 {
     response->success = true;
 }
@@ -52,13 +54,20 @@ auto KinematicsCalculator::calculate(KinematicsType type) -> void {
             DHParameter(SymEngine::real_double(deg_to_rad(-90)), SymEngine::integer(0), SymEngine::integer(0), SymEngine::symbol("Θ6"))
         });
     } break;
-    case KinematicsType::INVERSE: break;
+    case KinematicsType::INVERSE: {
+        InverseKinematics::calculate({
+
+        });
+    } break;
     default: break;
     }
    
 }
 
 auto KinematicsCalculator::initialize() -> void {
+    this->cli_robot_controller = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
+    this->cli_robot_controller->wait_for_service();
+
     this->srv_ini = this->create_service<std_srvs::srv::Trigger>(
         "~/initialization_complete", 
         std::bind(&KinematicsCalculator::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)

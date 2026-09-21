@@ -4,6 +4,7 @@
 //////////* Headers *//////////
 
 // ROS
+#include "std_srvs/srv/trigger.hpp"
 #include <rclcpp/node.hpp>
 #include <rclcpp/service.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -37,6 +38,10 @@ private:
     auto initialize() -> void;
 
 private:
+    // Client
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_robot_controller;
+
+    // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
 };
 

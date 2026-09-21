@@ -13,14 +13,6 @@ def generate_launch_description():
         ])
     )
 
-    kinematics_calculator = IncludeLaunchDescription(
-        PathJoinSubstitution([
-            FindPackageShare("kinematics"),
-            "launch",
-            "kinematics_calculator.launch.py"
-        ])
-    )
-
     robot_controller = Node(
         package="robot",
         executable="robot_controller",
@@ -29,6 +21,5 @@ def generate_launch_description():
 
     return LaunchDescription([
         board_controller,
-        kinematics_calculator,
         robot_controller
     ])

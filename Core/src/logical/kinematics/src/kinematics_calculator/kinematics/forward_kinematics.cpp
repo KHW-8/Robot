@@ -2,11 +2,12 @@
 
 //////////* Headers *//////////
 
+/* Core */
+//// Kinematics
+#include "math.h"
+
 /* SymEngine */
 #include <symengine/matrix.h>
-
-/* Kinematics */
-#include "math.h"
 
 ///////////////////////////////
 
@@ -84,6 +85,8 @@ auto ForwardKinematics::calculate(std::vector<DHParameter> v) -> void {
 
         vec.emplace_back(T);
     }
+
+    auto T = product(vec);
 }
 
 ///////////////////////////////////////
