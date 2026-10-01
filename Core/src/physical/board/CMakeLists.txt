@@ -14,6 +14,8 @@ find_package(board_msg REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
+# SymEngine
+find_package(symengine REQUIRED)
 
 
 ## Launch files ##
@@ -45,6 +47,8 @@ target_link_libraries(board_controller PUBLIC
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
+    # SymEngine
+    symengine
 )
 
 install(TARGETS

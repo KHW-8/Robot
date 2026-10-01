@@ -5,4 +5,4 @@ source install/conan/conanrosenv.sh
 source install/setup.sh
 
 # Run a node
-ros2 run kinematics calculator
+ros2 run kinematics kinematics_calculator

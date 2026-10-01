@@ -8,6 +8,8 @@
 #include "DH_parameter.h"
 /* STD */
 #include <vector>
+/* SymEngine*/
+#include <symengine/matrix.h>
 
 ///////////////////////////////
 
@@ -16,7 +18,9 @@
 
 class ForwardKinematics {
 public:
-    static auto calculate(std::vector<DHParameter> v) -> void;
+    static auto generate_transformation_operators(std::vector<DHParameter> v) -> std::vector<SymEngine::DenseMatrix>;
+    static auto generate_equation(std::vector<SymEngine::DenseMatrix> v) -> SymEngine::DenseMatrix;
+    static auto generate_equation(std::vector<DHParameter> v) -> SymEngine::DenseMatrix;
 };
 
 ///////////////////////////////

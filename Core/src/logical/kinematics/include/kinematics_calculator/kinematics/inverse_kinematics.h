@@ -3,17 +3,14 @@
 
 //////////* Headers *//////////
 
-/* Core */
-//// Kinematics
-#include "DH_parameter.h"
-/* STD */
-#include <vector>
+/* SymEngine */
+#include <symengine/matrix.h>
 
 ///////////////////////////////
 
 class InverseKinematics {
 public:
-    static auto calculate(std::vector<DHParameter> v) -> void;
+    static auto calculate(SymEngine::DenseMatrix T) -> void;
 };
 
 #endif

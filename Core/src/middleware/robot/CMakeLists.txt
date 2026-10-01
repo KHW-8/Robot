@@ -6,13 +6,15 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
+# Core
+find_package(board_msg REQUIRED)
+find_package(peripheral_msg REQUIRED)
 # ROS2
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-# Host
-find_package(board_msg REQUIRED)
-find_package(peripheral_msg REQUIRED)
+# SymEngine
+find_package(symengine REQUIRED)
 
 ## Launches ##
 # Install all launch files
@@ -42,6 +44,8 @@ target_link_libraries(robot_controller PRIVATE
     # ArmBot
     board_msg::board_msg
     peripheral_msg::peripheral_msg
+    # SymEngine
+    symengine
 )
 
 # Install all targets

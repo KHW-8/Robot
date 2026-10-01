@@ -1,29 +1,49 @@
 #include "math.h"
 
+
+//////////* Headers *//////////
+
+/* STD */
+#include <limits>
+#include <numbers>
+
+/* SymEngine */
 #include <symengine/simplify.h>
 
+///////////////////////////////
+
+
+//////////* Functions *//////////
+
+auto deg_to_rad(double degree) -> double {
+    return degree * std::numbers::pi / 180;
+}
+
+auto rad_to_deg(double radian) -> double {
+    return radian * 180 / std::numbers::pi;
+}
+
+auto pulse_to_deg(size_t pulse) -> double {
+    return static_cast<double>(pulse) * 240 / 1000;
+}
+
+auto pulse_to_rad(size_t pulse) -> double {
+    return deg_to_rad(pulse_to_deg(pulse));
+}
 
 auto substitute(SymEngine::DenseMatrix& m, 
                 SymEngine::RCP<const SymEngine::Basic> _old, 
                 SymEngine::RCP<const SymEngine::Basic> _new)-> void {
    for (size_t i = 0; i < m.nrows(); i++) {
         for (size_t j = 0; j < m.ncols(); j++) {
-            m.set(
-                i, 
-                j, 
-                m.get(i, j)->subs({ { _old, _new } })
-            );
-            
-            // Some element is float number and approaches 0, then change it to integer number with 0.
-            if (m.get(i, j)->get_type_code() == SymEngine::TypeID::SYMENGINE_REAL_DOUBLE) {
-                auto& num = down_cast<const SymEngine::RealDouble&>(*m.get(i, j));
-                if (num.as_double() == static_cast<double>(-1)) // Equals to -1
-                    m.set(i, j, SymEngine::integer(-1));
-                else if (std::abs(num.as_double()) < std::numeric_limits<double>::epsilon()) // Equals to 0
-                    m.set(i, j, SymEngine::integer(0));
-                else if (num.as_double() == static_cast<double>(1)) // Equals to 1
-                    m.set(i, j, SymEngine::integer(1));
-            }
+            auto element = m.get(i, j)->subs({ { _old, _new } });
+
+            // Simplify elements
+            auto res = nsimplify(element);
+            if (res.first) 
+                element = res.second;
+
+            m.set(i, j, element);
         }
     }
 }
@@ -56,6 +76,29 @@ auto simplify(SymEngine::DenseMatrix& m) -> void {
     }
 }
 
+auto nsimplify(SymEngine::RCP<const SymEngine::Basic> element) -> std::pair<bool, SymEngine::RCP<const SymEngine::Basic> > {
+    std::pair<bool, SymEngine::RCP<const SymEngine::Basic> > res;
+
+    switch (element->get_type_code()) {
+    case SymEngine::TypeID::SYMENGINE_REAL_DOUBLE: {
+        const auto num = dynamic_cast<const SymEngine::RealDouble*>(element.get())->as_double();
+
+        auto integer_part = std::floor(num);
+        auto fractional_part = num - integer_part;
+
+        if (fractional_part < std::numeric_limits<double>::epsilon()) {
+            res.first = true;
+            res.second = SymEngine::integer(static_cast<int>(integer_part));
+        }
+    } break;
+    default:
+        res.first = false;
+        break;
+    }
+
+    return res;
+}
+
 auto expand(SymEngine::DenseMatrix& m) -> void {
     for (size_t i = 0; i < m.nrows(); i++) {
         for (size_t j = 0; j < m.ncols(); j++) {
@@ -78,3 +121,5 @@ auto product(std::vector<SymEngine::DenseMatrix> v, size_t begin, size_t end) ->
 
     return res;
 }
+
+/////////////////////////////////
