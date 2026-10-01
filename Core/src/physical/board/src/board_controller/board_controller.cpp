@@ -135,8 +135,20 @@ auto BoardController::initialize() -> void {
     }
 
     // Create subscription of packet
-    this->sub_packet = this->create_subscription<board_msg::msg::Packet>(
-        "/board_controller/packet",
+    this->sub_bus_servo = this->create_subscription<board_msg::msg::Packet>(
+        "/bus_servo/packet",
+        10,
+        std::bind(&BoardController::receive_packet, this, std::placeholders::_1)
+    );
+
+    this->sub_buzzer = this->create_subscription<board_msg::msg::Packet>(
+        "/buzzer/packet",
+        10,
+        std::bind(&BoardController::receive_packet, this, std::placeholders::_1)
+    );
+
+    this->sub_led = this->create_subscription<board_msg::msg::Packet>(
+        "/led/packet",
         10,
         std::bind(&BoardController::receive_packet, this, std::placeholders::_1)
     );

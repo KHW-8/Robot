@@ -13,6 +13,26 @@ def generate_launch_description():
         ])
     )
 
+    bus_servo = Node(
+        package="peripheral",
+        executable="bus_servo",
+        output="screen"
+    )
+
+
+    buzzer = Node(
+        package="peripheral",
+        executable="buzzer",
+        output="screen"
+    )
+
+
+    led = Node(
+        package="peripheral",
+        executable="led",
+        output="screen"
+    )
+
     robot_controller = Node(
         package="robot",
         executable="robot_controller",
@@ -21,5 +41,8 @@ def generate_launch_description():
 
     return LaunchDescription([
         board_controller,
+        bus_servo,
+        buzzer,
+        led,
         robot_controller
     ])

@@ -33,8 +33,8 @@ add_executable(robot_controller ${robot_controller_src})
 
 target_include_directories(robot_controller PRIVATE
     ${CMAKE_SOURCE_DIR}/include/robot_controller
-    ${CMAKE_SOURCE_DIR}/include/robot_controller/peripheral
     ${CMAKE_SOURCE_DIR}/../../global/include/utility
+    ${CMAKE_SOURCE_DIR}/../../physical/peripheral/include/bus_servo
 )
 
 target_link_libraries(robot_controller PRIVATE

@@ -6,11 +6,15 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
+# Core
+find_package(peripheral_msg REQUIRED)
+find_package(board_msg REQUIRED)
+# ROS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-# Host
-find_package(peripheral_msg REQUIRED)
+# SymEngine
+find_package(symengine REQUIRED)
 
 ## Launch files ##
 install(DIRECTORY
@@ -24,12 +28,19 @@ add_executable(bus_servo src/bus_servo/bus_servo.cpp)
 
 target_include_directories(bus_servo PUBLIC
     ${CMAKE_SOURCE_DIR}/include/bus_servo
+    ${CMAKE_SOURCE_DIR}/include//peripheral
+    ${CMAKE_SOURCE_DIR}/../../global/include/utility
 )
 
 target_link_libraries(bus_servo PUBLIC
+    # Core
+    peripheral_msg::peripheral_msg
+    board_msg::board_msg
+    # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    peripheral_msg::peripheral_msg
+    # SymEngine
+    symengine
 )
 
 # Buzzer #
@@ -37,12 +48,19 @@ add_executable(buzzer src/buzzer/buzzer.cpp)
 
 target_include_directories(buzzer PUBLIC
     ${CMAKE_SOURCE_DIR}/include/buzzer
+    ${CMAKE_SOURCE_DIR}/include//peripheral
+    ${CMAKE_SOURCE_DIR}/../../global/include/utility
 )
 
 target_link_libraries(buzzer PUBLIC
+    # Core
+    peripheral_msg::peripheral_msg
+    board_msg::board_msg
+    # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    peripheral_msg::peripheral_msg
+    # SymEngine
+    symengine
 )
 
 # LED #
@@ -50,12 +68,19 @@ add_executable(led src/led/led.cpp)
 
 target_include_directories(led PUBLIC
     ${CMAKE_SOURCE_DIR}/include/led
+    ${CMAKE_SOURCE_DIR}/include//peripheral
+    ${CMAKE_SOURCE_DIR}/../../global/include/utility
 )
 
 target_link_libraries(led PUBLIC
+    # Core
+    peripheral_msg::peripheral_msg
+    board_msg::board_msg
+    # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    peripheral_msg::peripheral_msg
+    # SymEngine
+    symengine
 )
 
 install(TARGETS

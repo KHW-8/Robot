@@ -4,10 +4,12 @@
 ///////////////* Headers *///////////////
 
 /* ROS2 */
+#include <rclcpp/client.hpp>
 #include <rclcpp/node.hpp>
 #include <std_srvs/srv/trigger.hpp>
 /* Core */
 //// Message
+#include "board_msg/msg/packet.hpp"
 #include "peripheral_msg/msg/bus_servo_request.hpp"
 
 /////////////////////////////////////////
@@ -72,22 +74,33 @@ enum class BusServoCMD {
 
 ////////////////////* Classes *////////////////////
 
-class BusServo : rclcpp::Node {
+class BusServo : public rclcpp::Node {
 public:
     BusServo();
     
 public:
-    void initialize();
-
-    void read_pos(const std::vector<decltype(peripheral_msg::msg::BusServo::id)>& ids);
-
-    void set_pos(const decltype(peripheral_msg::msg::BusServo::id)& id, 
-                 const decltype(peripheral_msg::msg::BusServo::angle)& angle, 
-                 const decltype(peripheral_msg::msg::BusServo::duration)& duration);
+    auto set_pos(const peripheral_msg::msg::BusServoRequest::UniquePtr& request) -> void;
 
 private:
-    rclcpp::Publisher<peripheral_msg::msg::BusServoRequest>::SharedPtr pub;
+    // Callback
+    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
+
+    // Initialization
+    void initialize();
+
+private:
+    // Client
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_board_controller;
+
+    // Publisher
+    rclcpp::Publisher<board_msg::msg::Packet>::SharedPtr pub_board_controller;
+
+    // Subscription
+    rclcpp::Subscription<peripheral_msg::msg::BusServoRequest>::SharedPtr sub_robot_controller;
+
+    // Service
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
+
 };
 
 /////////////////////////////////////////////////////

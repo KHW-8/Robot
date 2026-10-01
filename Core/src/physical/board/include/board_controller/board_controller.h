@@ -10,7 +10,10 @@
 #include <std_srvs/srv/trigger.hpp>
 // Board BoardController Message
 #include "board_msg/msg/packet.hpp"
+
 ///////////////////////////////
+
+//////////* Classes *//////////
 
 class BoardController : public rclcpp::Node {
 public:
@@ -37,8 +40,11 @@ public:
     auto listen() -> void;
 
 private:
-    // Client
-    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_packet;
+    // Subscription
+    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_bus_servo;
+    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_buzzer;
+    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_led;
+
 
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
@@ -51,5 +57,7 @@ private:
     // Thread
     std::thread thread_receive;
 };
+
+///////////////////////////////
 
 #endif
