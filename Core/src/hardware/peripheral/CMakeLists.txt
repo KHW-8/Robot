@@ -17,8 +17,6 @@ find_package(cv_bridge REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-# SymEngine
-find_package(symengine REQUIRED)
 
 ## Launch files ##
 install(DIRECTORY
@@ -32,8 +30,8 @@ add_executable(bus_servo src/bus_servo/bus_servo.cpp)
 
 target_include_directories(bus_servo PUBLIC
     ${CMAKE_SOURCE_DIR}/include/bus_servo
-    ${CMAKE_SOURCE_DIR}/include//peripheral
-    ${CMAKE_SOURCE_DIR}/../../global/include/utility
+    ${CMAKE_SOURCE_DIR}/include/peripheral
+    ${CMAKE_SOURCE_DIR}/include/global
 )
 
 target_link_libraries(bus_servo PUBLIC
@@ -43,8 +41,6 @@ target_link_libraries(bus_servo PUBLIC
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    # SymEngine
-    symengine
 )
 
 # Buzzer #
@@ -52,8 +48,8 @@ add_executable(buzzer src/buzzer/buzzer.cpp)
 
 target_include_directories(buzzer PUBLIC
     ${CMAKE_SOURCE_DIR}/include/buzzer
-    ${CMAKE_SOURCE_DIR}/include//peripheral
-    ${CMAKE_SOURCE_DIR}/../../global/include/utility
+    ${CMAKE_SOURCE_DIR}/include/peripheral
+    ${CMAKE_SOURCE_DIR}/include/global
 )
 
 target_link_libraries(buzzer PUBLIC
@@ -63,8 +59,6 @@ target_link_libraries(buzzer PUBLIC
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    # SymEngine
-    symengine
 )
 
 # Camera 
@@ -88,8 +82,6 @@ target_link_libraries(camera PUBLIC
     rclcpp::rclcpp
     std_srvs::std_srvs
     sensor_msgs::sensor_msgs
-    # SymEngine
-    symengine
 )
 
 set_target_properties(camera PROPERTIES
@@ -102,7 +94,7 @@ add_executable(led src/led/led.cpp)
 target_include_directories(led PUBLIC
     ${CMAKE_SOURCE_DIR}/include/led
     ${CMAKE_SOURCE_DIR}/include//peripheral
-    ${CMAKE_SOURCE_DIR}/../../global/include/utility
+    ${CMAKE_SOURCE_DIR}/include/global
 )
 
 target_link_libraries(led PUBLIC
@@ -112,8 +104,6 @@ target_link_libraries(led PUBLIC
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    # SymEngine
-    symengine
 )
 
 # Install all targets

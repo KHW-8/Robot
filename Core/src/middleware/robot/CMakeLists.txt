@@ -13,8 +13,6 @@ find_package(peripheral_msg REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-# SymEngine
-find_package(symengine REQUIRED)
 
 ## Launches ##
 # Install all launch files
@@ -33,7 +31,7 @@ add_executable(robot_controller ${robot_controller_src})
 
 target_include_directories(robot_controller PRIVATE
     ${CMAKE_SOURCE_DIR}/include/robot_controller
-    ${CMAKE_SOURCE_DIR}/../../global/include/utility
+    ${CMAKE_SOURCE_DIR}/global/include/utility
     ${CMAKE_SOURCE_DIR}/../../hardware/peripheral/include/bus_servo
 )
 
@@ -44,8 +42,6 @@ target_link_libraries(robot_controller PRIVATE
     # ArmBot
     board_msg::board_msg
     peripheral_msg::peripheral_msg
-    # SymEngine
-    symengine
 )
 
 # Install all targets

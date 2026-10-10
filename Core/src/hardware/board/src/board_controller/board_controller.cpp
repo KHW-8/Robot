@@ -9,8 +9,6 @@
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
-// Global
-#include "utility.hpp"
 
 BoardController::BoardController() 
     :Node("board_controller"),
@@ -66,6 +64,16 @@ auto BoardController::connect(const std::string& port) -> bool {
 auto BoardController::close() -> void {
     this->serial.close();
 }
+
+auto BoardController::generate_checksum(const std::vector<uint8_t>& vector) -> uint8_t {
+    size_t sum = 0;
+
+    for (const auto& data : vector)
+        sum += data;
+
+    return (uint8_t)(~sum);
+}
+
 
 auto BoardController::initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, 
                                               const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 

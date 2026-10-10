@@ -5,15 +5,11 @@
 /* Core */
 //// Message
 #include "board_msg/msg/packet.hpp"
-//// Global
-#include "utility.hpp"
 //// Physical
 #include "bus_servo.h"
 /* ROS2 */
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
-/* STD */
-#include <cstdint>
 
 ///////////////////////////////
 

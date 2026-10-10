@@ -20,10 +20,13 @@ public:
     BoardController();
     ~BoardController();
 
-public:
+private:
     // Connection
     auto connect(const std::string& port) -> bool;
     auto close() -> void;
+
+    // checksum
+    auto generate_checksum(const std::vector<uint8_t>& vector) -> uint8_t;
 
     // Transmit / Receive
     auto transmit(const std::vector<uint8_t>& vector_data) -> void;
@@ -38,6 +41,7 @@ public:
 
     // Thread
     auto listen() -> void;
+
 
 private:
     // Subscription

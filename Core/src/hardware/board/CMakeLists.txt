@@ -37,7 +37,6 @@ add_executable(board_controller
 
 target_include_directories(board_controller PRIVATE
     ${CMAKE_SOURCE_DIR}/include/board_controller
-    ${CMAKE_SOURCE_DIR}/../../global/include/utility
 )
 
 target_link_libraries(board_controller PUBLIC
@@ -49,8 +48,6 @@ target_link_libraries(board_controller PUBLIC
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    # SymEngine
-    symengine
 )
 
 install(TARGETS

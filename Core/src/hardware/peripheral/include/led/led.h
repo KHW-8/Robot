@@ -22,7 +22,7 @@ public:
     auto set(const peripheral_msg::msg::LEDRequest& request) -> void;
 
     
-    private:
+private:
     auto initialize() -> void;
     
     // Callback

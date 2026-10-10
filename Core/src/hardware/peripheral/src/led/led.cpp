@@ -2,7 +2,7 @@
 
 ///////////////* Headers *///////////////
 
-// Core
+/* Core */
 #include "utility.hpp"
 #include "peripheral_msg/msg/led.hpp"
 #include "board_msg/msg/packet.hpp"
