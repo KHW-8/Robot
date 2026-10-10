@@ -10,7 +10,7 @@ endif()
 find_package(peripheral_msg REQUIRED)
 find_package(board_msg REQUIRED)
 # OpenCV
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core)
 # ROS
 find_package(ament_cmake REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -24,7 +24,7 @@ install(DIRECTORY
     DESTINATION share/${PROJECT_NAME}
 )
 
-## Executables ##
+## Targets ##
 # Bus Servo #
 add_executable(bus_servo src/bus_servo/bus_servo.cpp)
 
@@ -76,7 +76,7 @@ target_link_libraries(camera PUBLIC
     # Deptrum
     ${CMAKE_SOURCE_DIR}/../../3rdparty/sdk/depth_camera/deptrum/aurora900/lib/libdeptrum_stream_aurora900.so.1.1.19
     # OpenCV
-    opencv::opencv
+    opencv_core
     # ROS
     cv_bridge::cv_bridge
     rclcpp::rclcpp
@@ -106,7 +106,7 @@ target_link_libraries(led PUBLIC
     std_srvs::std_srvs
 )
 
-# Install all targets
+## Install all targets ##
 install(TARGETS
     bus_servo
     buzzer

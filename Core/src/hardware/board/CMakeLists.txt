@@ -15,8 +15,6 @@ find_package(board_msg REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-# SymEngine
-find_package(symengine REQUIRED)
 
 
 ## Launch files ##
@@ -41,7 +39,6 @@ target_include_directories(board_controller PRIVATE
 
 target_link_libraries(board_controller PUBLIC
     # Boost
-    # Boost::boost
     Boost::filesystem
     # Core
     board_msg::board_msg

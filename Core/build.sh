@@ -8,7 +8,8 @@ source install/setup.sh
 
 colcon build \
 --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
---paths src/middleware/* src/control/* src/hardware/*
+--paths src/middleware/* src/hardware/* \
+--base-paths src/functional/*
 
 # Build an individual package
 # colcon build --packages-select peripheral --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
