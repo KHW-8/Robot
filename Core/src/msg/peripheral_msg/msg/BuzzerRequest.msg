@@ -1,4 +1,0 @@
-uint16 frequency
-float32 on_duration
-float32 off_duration
-uint16 repeat_count

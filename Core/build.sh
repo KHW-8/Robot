@@ -2,9 +2,9 @@
 source install/conan/conanrosenv.sh
 
 # Build
-colcon build --paths src/msg/* --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+colcon build --paths src/hardware/msg/*
 source install/setup.sh
-colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+colcon build --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --paths src/middleware/* src/control/* src/hardware/*
 
 # Build an individual package
-# colcon build --packages-select board_controller
+# colcon build --packages-select peripheral --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

@@ -4,4 +4,4 @@ source install/conan/conanrosenv.sh
 # Source ROS enviroment
 source install/setup.sh
 
-ros2 launch robot robot_controller.launch.py
+ros2 launch peripheral camera.launch.py
