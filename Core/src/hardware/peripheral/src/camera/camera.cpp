@@ -33,21 +33,39 @@ auto Camera::initialize() -> void {
 
     // Check device count
     if (device_list.empty()) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "No connected devices.");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: No connected devices.", 
+            __FILE__, 
+            __LINE__
+        );
+
         return;
     }
 
     // Open device
     this->device = deptrum::stream::DeviceManager::GetInstance()->CreateDevice(device_list[0]);
     if (this->device->Open() != 0) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to open depth camera.");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Failed to open depth camera.", 
+            __FILE__, 
+            __LINE__
+        );
+
         return;
     }
 
     // Acquire frame modes
     std::vector<std::tuple<deptrum::FrameMode, deptrum::FrameMode, deptrum::FrameMode> > frame_mode_vec;
     if (this->device->GetSupportedFrameMode(frame_mode_vec) != 0) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to acquire device supported frame modes.");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Failed to acquire device supported frame modes.", 
+            __FILE__, 
+            __LINE__
+        );
+
         return;
     }
 
@@ -57,7 +75,13 @@ auto Camera::initialize() -> void {
 
     // Set frame mode
     if (this->device->SetMode(ir_mode, rgb_mode, depth_mode) != 0) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to set frame mode.");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Failed to set frame mode.", 
+            __FILE__, 
+            __LINE__
+        );
+
         return;
     }
 
@@ -71,7 +95,13 @@ auto Camera::initialize() -> void {
         }
     ) != 0) 
     {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to create stream.");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Failed to create stream.", 
+            __FILE__, 
+            __LINE__
+        );
+
         return;
     }
 

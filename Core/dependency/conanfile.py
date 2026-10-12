@@ -1,5 +1,4 @@
 from conan import ConanFile
-from conan.tools.cmake import CMakeToolchain
 
 class Dependency(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
@@ -16,3 +15,4 @@ class Dependency(ConanFile):
         self.requires("qt/6.11.1")
         self.requires("symengine/0.14.0")
         self.requires("xkbcommon/1.6.0", override=True)
+        self.requires("yaml-cpp/0.9.0")

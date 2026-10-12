@@ -13,6 +13,9 @@ find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 # OpenCV
 find_package(OpenCV REQUIRED COMPONENTS core highgui)
+# YAML-CPP
+find_package(yaml-cpp REQUIRED)
+
 
 ## Launches ##
 # Install all launch files
@@ -37,14 +40,15 @@ target_link_libraries(vision PUBLIC
     rclcpp::rclcpp
     std_srvs::std_srvs
     sensor_msgs::sensor_msgs
+    # YAML-CPP
+    yaml-cpp::yaml-cpp
 )
 
-## Install all targets ##
+## Install ##
 install(TARGETS
     vision
     DESTINATION lib/${PROJECT_NAME}
 )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

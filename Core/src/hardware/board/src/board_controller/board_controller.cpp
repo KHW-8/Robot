@@ -44,7 +44,12 @@ auto BoardController::connect(const std::string& port) -> bool {
 
         return false;
     } catch (...) {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Unknown error!");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Unknown error.", 
+            __FILE__, 
+            __LINE__
+        );
 
         return false;
     }
@@ -137,7 +142,13 @@ auto BoardController::initialize() -> void {
     if (res)
         this->thread_receive = std::thread(&BoardController::receive, this);
     else {
-        RCLCPP_ERROR(rclcpp::get_logger(""), "Connection error!");
+        RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Line: %d, Error: Connection error.", 
+            __FILE__, 
+            __LINE__
+        );
+
         return;
     }
 
