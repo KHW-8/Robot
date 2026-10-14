@@ -1,5 +1,6 @@
 //////////* Headers *//////////
 #include "vision.h"
+#include "std_msgs/msg/header.hpp"
 
 /* OpenCV */
 #include <algorithm>
@@ -17,6 +18,7 @@
 #include <rclcpp/logging.hpp>
 
 /* YAML-CPP */
+#include <sensor_msgs/image_encodings.hpp>
 #include <yaml-cpp/node/parse.h>
 #include <yaml-cpp/yaml.h>
 
@@ -63,7 +65,7 @@ auto Vision::receive_bgr_frame(const sensor_msgs::msg::Image& msg) -> void {
     auto bgr_frame = cv_image->image;
 
     recognize_color(msg, Color(Color::RED));
-    
+
     // cv::imshow("BGR", bgr_frame);
     // cv::waitKey(1);
 }
@@ -128,22 +130,20 @@ auto Vision::load_config() -> bool {
         return false;
     }
 
-
-
     return true;
 }
 
 
 auto Vision::recognize_color(const sensor_msgs::msg::Image& msg, 
                              Color color)-> void {
-    auto cv_image = cv_bridge::toCvCopy(msg, "rgb8");
-    auto rgb_frame = cv_image->image;
+    // Get BGR frame
+    auto cv_image = cv_bridge::toCvCopy(msg, "bgr8");
+    auto bgr_frame = cv_image->image;
 
-    // Convert RGB to BGR
-    cv::Mat bgr_frame;
-    cv::cvtColor(rgb_frame, bgr_frame, cv::COLOR_RGB2BGR);
+    if (bgr_frame.empty())
+        return;
 
-    // Reduce BGR image noise
+    // Reduce BGR noise
     cv::Mat blured_bgr_frame;
     cv::GaussianBlur(bgr_frame, blured_bgr_frame, {3, 3}, 3);
     
@@ -171,15 +171,48 @@ auto Vision::recognize_color(const sensor_msgs::msg::Image& msg,
             auto area = std::abs(cv::contourArea(*max_it));
             if (area >= 2000) {
                 RCLCPP_INFO(rclcpp::get_logger(""), "Detected %s", color.to_string().c_str());
+
+                auto msg = cv_bridge::CvImage(
+                    std_msgs::msg::Header(), 
+                    sensor_msgs::image_encodings::MONO8,
+                    thresholded_frame
+                ).toImageMsg();
+
+                find_center_point(*msg);
             }
         }
     }
 
-    cv::imshow("LAB", lab_frame);
+    cv::imshow("BGR", bgr_frame);
     cv::imshow("Thresholding", thresholded_frame);
     cv::waitKey(1);
 }
 
+
+auto Vision::find_center_point(const sensor_msgs::msg::Image& msg) -> void {
+    auto cv_image = cv_bridge::toCvCopy(msg, "mono8");
+    auto gray_frame = cv_image->image;
+
+    if (gray_frame.empty())
+        return;
+
+    // Find color contours
+    std::vector<std::vector<cv::Point> > contours;
+    cv::findContours(gray_frame, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+
+    if (!contours.empty()) {
+        auto max_it = std::max_element(contours.begin(), contours.end(), 
+        [](const std::vector<cv::Point>& a, const std::vector<cv::Point>& b) {
+            return cv::contourArea(a) < cv::contourArea(b);
+        });
+
+        if (max_it != contours.end()) {
+            auto rect = cv::minAreaRect(*max_it);
+
+            RCLCPP_INFO(rclcpp::get_logger(""), "%f, %f", rect.center.x, rect.center.y);
+        }
+    }
+}
 
 
 auto main(int argc, char** argv) -> int {

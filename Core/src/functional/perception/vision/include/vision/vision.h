@@ -10,6 +10,9 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
+/* OpenCV */
+#include <opencv2/core.hpp>
+
 /* YAML-CPP*/
 #include <string>
 #include <yaml-cpp/node/node.h>
@@ -62,6 +65,7 @@ private:
 
     // Recognition
     auto recognize_color(const sensor_msgs::msg::Image& msg, Color color) -> void;
+    auto find_center_point(const sensor_msgs::msg::Image& msg) -> void;
 
 private:
     // Config

@@ -120,8 +120,6 @@ auto Camera::initialize() -> void {
 void Camera::start() {
     this->stream->Start();
 
-    auto cv_image = cv_bridge::CvImage();
-
     while (true) {
         deptrum::stream::StreamFrames frames;
         stream->GetFrames(frames);
@@ -136,43 +134,41 @@ void Camera::start() {
                 cv::cvtColor(yuv_frame, bgr_frame, cv::COLOR_YUV2BGR_NV12);
                 
                 // Convert cv::Mat to sensor_msg::msg::Image
-                cv_image.encoding = "bgr8";
-                cv_image.image = bgr_frame;
-
-                sensor_msgs::msg::Image msg;
-                cv_image.toImageMsg(msg);
+                auto msg = cv_bridge::CvImage(
+                    std_msgs::msg::Header(), 
+                    sensor_msgs::image_encodings::BGR8,
+                    bgr_frame
+                ).toImageMsg();
 
                 // Publish a BGR frame
-                this->pub_bgr->publish(msg);
+                this->pub_bgr->publish(*msg);
             } break;
             case deptrum::FrameType::kIrFrame: { 
                 // Acquire an infrared frame
                 auto infrared_frame = cv::Mat(frame->rows, frame->cols, CV_8UC1, frame->data.get());
 
                 // Convert cv::Mat to sensor_msg::msg::Image
-                auto cv_image = cv_bridge::CvImage();
-                cv_image.encoding = "8UC1";
-                cv_image.image = infrared_frame;
-
-                sensor_msgs::msg::Image msg;
-                cv_image.toImageMsg(msg);
+                 auto msg = cv_bridge::CvImage(
+                    std_msgs::msg::Header(), 
+                    sensor_msgs::image_encodings::TYPE_8UC1,
+                    infrared_frame
+                ).toImageMsg();
 
                 // Publish an infrared frame
-                this->pub_infrared->publish(msg);
+                this->pub_infrared->publish(*msg);
             } break;
             case deptrum::FrameType::kDepthFrame: { 
                 auto depth_frame = cv::Mat(frame->rows, frame->cols, CV_16UC1, frame->data.get());
 
-                  // Convert cv::Mat to sensor_msg::msg::Image
-                auto cv_image = cv_bridge::CvImage();
-                cv_image.encoding = "16UC1";
-                cv_image.image = depth_frame;
-
-                sensor_msgs::msg::Image msg;
-                cv_image.toImageMsg(msg);
+                // Convert cv::Mat to sensor_msg::msg::Image
+                auto msg = cv_bridge::CvImage(
+                    std_msgs::msg::Header(), 
+                    sensor_msgs::image_encodings::TYPE_16UC1,
+                    depth_frame
+                ).toImageMsg();
 
                 // Publish an infrared frame
-                this->pub_depth->publish(msg);
+                this->pub_depth->publish(*msg);
             } break;
             default: break;
             }
