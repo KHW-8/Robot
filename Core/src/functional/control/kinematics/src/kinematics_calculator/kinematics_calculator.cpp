@@ -7,6 +7,7 @@
 #include "forward_kinematics.h"
 #include "inverse_kinematics.h"
 //// Global
+#include "kinematics_msgs/msg/transformation.hpp"
 #include "math.h"
 #include "utility.hpp"
 
@@ -33,10 +34,9 @@
 auto alpha1 = deg_to_rad(-90);
 auto alpha4 = deg_to_rad(90);
 
-auto link1 = 0.05;
-auto link2 = 0.10048;
-auto link3 = 0.1;
-auto link4 = 0.055;
+auto perpendicular_distance_between_link2_joint_z_axes = 0.101;
+auto perpendicular_distance_between_link3_joint_z_axes = 0.095;
+auto perpendicular_distance_between_link4_joint_x_axes = 0.4;
 
 ////////////////////////////////////////
 
@@ -49,6 +49,12 @@ KinematicsCalculator::KinematicsCalculator()
 
     calculate(KinematicsType::FORWARD);
 }
+
+auto KinematicsCalculator::receive_transformation_from_vision(const kinematics_msgs::msg::Transformation& msg) {
+    auto T = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(msg.transformation.data());
+    InverseKinematics::calculate(T);
+}
+
 
 auto KinematicsCalculator::initialization_complete([[maybe_unused]]std::shared_ptr<std_srvs::srv::Trigger::Request> request, 
                                                    std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 
@@ -64,25 +70,20 @@ auto KinematicsCalculator::calculate(KinematicsType type) -> void {
 
         substitute(T, SymEngine::symbol("α1"), SymEngine::real_double(alpha1));
         substitute(T, SymEngine::symbol("α4"), SymEngine::real_double(alpha4));
-        substitute(T, SymEngine::symbol("a2"), SymEngine::real_double(link2));
-        substitute(T, SymEngine::symbol("a3"), SymEngine::real_double(link3));
-        substitute(T, SymEngine::symbol("d2"), SymEngine::real_double(link1));
-        substitute(T, SymEngine::symbol("d5"), SymEngine::real_double(link4));
-        substitute(T, SymEngine::symbol("Θ1"), SymEngine::real_double(pulse_to_rad(500)));
-        substitute(T, SymEngine::symbol("Θ2"), SymEngine::real_double(pulse_to_rad(600)));
-        substitute(T, SymEngine::symbol("Θ3"), SymEngine::real_double(pulse_to_rad(820)));
-        substitute(T, SymEngine::symbol("Θ4"), SymEngine::real_double(pulse_to_rad(110)));
-        substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(pulse_to_rad(500)));
-        // substitute(T, SymEngine::symbol("Θ1"), SymEngine::real_double(deg_to_rad(10)));
-        // substitute(T, SymEngine::symbol("Θ2"), SymEngine::real_double(deg_to_rad(20)));
-        // substitute(T, SymEngine::symbol("Θ3"), SymEngine::real_double(deg_to_rad(30)));
-        // substitute(T, SymEngine::symbol("Θ4"), SymEngine::real_double(deg_to_rad(40)));
-        // substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(deg_to_rad(50)));
+        substitute(T, SymEngine::symbol("a2"), SymEngine::real_double(perpendicular_distance_between_link2_joint_z_axes));
+        substitute(T, SymEngine::symbol("a3"), SymEngine::real_double(perpendicular_distance_between_link3_joint_z_axes));
+        substitute(T, SymEngine::symbol("d5"), SymEngine::real_double(perpendicular_distance_between_link4_joint_x_axes));
+        substitute(T, SymEngine::symbol("Θ1"), SymEngine::real_double(deg_to_rad(54)));
+        substitute(T, SymEngine::symbol("Θ2"), SymEngine::real_double(deg_to_rad(120)));
+        substitute(T, SymEngine::symbol("Θ3"), SymEngine::real_double(deg_to_rad(26)));
+        substitute(T, SymEngine::symbol("Θ4"), SymEngine::real_double(deg_to_rad(192)));
+        substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(deg_to_rad(144)));
+
+        std::cout << T << std::endl;
 
         InverseKinematics::calculate(T);
     } break;
     case KinematicsType::INVERSE: {
-        
     } break;
     default: break;
     }
@@ -116,7 +117,7 @@ auto KinematicsCalculator::rpy(const SymEngine::DenseMatrix& rotation_matrix) ->
 auto KinematicsCalculator::generate_forward_kinematics_equation() -> void {
     this->transformation_operators = ForwardKinematics::generate_transformation_operators({
         DHParameter(SymEngine::integer(0),          SymEngine::integer(0),          SymEngine::integer(0),          SymEngine::symbol("Θ1")),
-        DHParameter(SymEngine::symbol("α1"),     SymEngine::integer(0),          SymEngine::symbol("d2"),     SymEngine::symbol("Θ2")),
+        DHParameter(SymEngine::symbol("α1"),     SymEngine::integer(0),          SymEngine::integer(0),          SymEngine::symbol("Θ2")),
         DHParameter(SymEngine::integer(0),          SymEngine::symbol("a2"),     SymEngine::integer(0),          SymEngine::symbol("Θ3")),
         DHParameter(SymEngine::integer(0),          SymEngine::symbol("a3"),     SymEngine::integer(0),          SymEngine::symbol("Θ4")),
         DHParameter(SymEngine::symbol("α4"),     SymEngine::integer(0),          SymEngine::symbol("d5"),     SymEngine::symbol("Θ5")),
@@ -127,10 +128,13 @@ auto KinematicsCalculator::generate_forward_kinematics_equation() -> void {
 
 
 auto KinematicsCalculator::initialize() -> void {
-    generate_forward_kinematics_equation();
+    this->sub_vision = this->create_subscription<kinematics_msgs::msg::Transformation>(
+        "/vision/transformation", 
+        1,
+        std::bind(&KinematicsCalculator::receive_transformation_from_vision, this, std::placeholders::_1)
+    );
 
-    // this->cli_robot_controller = this->create_client<std_srvs::srv::Trigger>("/robot_controller/initialization_complete");
-    // this->cli_robot_controller->wait_for_service();
+    generate_forward_kinematics_equation();
 
     this->srv_ini = this->create_service<std_srvs::srv::Trigger>(
         "~/initialization_complete", 

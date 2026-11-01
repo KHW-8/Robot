@@ -1,14 +1,19 @@
+//////////* Headers *//////////
+
 #include "board_controller.h"
 
-// Boost
+/* Boost */
 #include <boost/asio.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/serial_port_base.hpp>
 #include <boost/throw_exception.hpp>
-// ROS2
+
+/* ROS2 */
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+
+///////////////////////////////
 
 BoardController::BoardController() 
     :Node("board_controller"),
@@ -114,7 +119,7 @@ auto BoardController::receive() -> void {
         if (packet.empty())
             continue;;
 
-        RCLCPP_INFO(rclcpp::get_logger(""), "%s", packet.c_str());
+        RCLCPP_INFO(rclcpp::get_logger(""), "Received: %s", packet.c_str());
     }
 }
 

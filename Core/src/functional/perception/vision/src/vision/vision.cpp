@@ -1,33 +1,47 @@
 //////////* Headers *//////////
 #include "vision.h"
-#include "std_msgs/msg/header.hpp"
+
+/* Eigen */
+#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <eigen3/Eigen/src/Core/util/Constants.h>
 
 /* OpenCV */
-#include <algorithm>
-#include <cstdlib>
 #include <opencv2/core.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 /* ROS */
 #include <cv_bridge/cv_bridge.hpp>
-#include <opencv2/imgproc.hpp>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include "sensor_msgs/msg/camera_info.hpp"
+#include "std_msgs/msg/header.hpp"
+#include "std_srvs/srv/trigger.hpp"
+#include <sensor_msgs/image_encodings.hpp>
 
 /* YAML-CPP */
-#include <sensor_msgs/image_encodings.hpp>
+#include <yaml-cpp/node/node.h>
 #include <yaml-cpp/node/parse.h>
 #include <yaml-cpp/yaml.h>
 
 /* STD */
+#include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <functional>
 #include <vector>
 #include <memory>
-#include <filesystem>
 
 ///////////////////////////////
+
+//////////* Global Variables *//////////
+
+double perpendicular_distance_between_link4_and_camera_z_axes = 0.03;
+
+////////////////////////////////////////
 
 //////////* Functions *//////////
 
@@ -60,6 +74,11 @@ Vision::Vision()
     initialize();
 }
 
+auto Vision::initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void {
+    response->success = true;
+}
+
+
 auto Vision::receive_bgr_frame(const sensor_msgs::msg::Image& msg) -> void {
     auto cv_image = cv_bridge::toCvCopy(msg, "bgr8");
     auto bgr_frame = cv_image->image;
@@ -86,6 +105,47 @@ auto Vision::receive_infrared_frame(const sensor_msgs::msg::Image& msg) -> void 
     // cv::waitKey(1);
 }
 
+auto Vision::receive_camera_info_rgb(const sensor_msgs::msg::CameraInfo& msg) -> void {
+    this->K = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(msg.k.data());
+}
+
+auto Vision::pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> void {
+    // Convert the pixel coordinate to homogeneous form.
+    Eigen::Vector3d p = { pos.x(), pos.y(), 1 };
+
+    // Prepare some parameters
+    auto inv_K = this->K.inverse();
+
+    auto R = this->T.block(0, 0, 3, 3);
+    auto t = this->T.topRightCorner<3, 1>();
+    
+    auto R_T = R.transpose();
+    
+    /*
+     * Calculate Scale(λ)：
+     * 
+     * Pc = R * Pw + t  ==>  Pw = R^T * Pc - R^T * t (1)
+     * Pc = λ * K^-1 * p                             (2)
+     * Substitute equation (2) into (1), get Pw = R^T * λ * K^-1 * p - R^T * t
+     * 
+     * We choose an arbitary 3D coordinate on ground which Z-component equals 0(Zw = 0).
+     * So, for Z-component, we get:
+     *      Zw = R^T * Zc - R^T * t   
+     * ==>  R^T * Zc - R^T * t  = 0   
+     * ==>  R^T * λ * K^-1 * z - R^T * t  = 0  
+     * ==>  λ = R^T * t /  R^T * K^-1 * z
+     */
+
+    auto scale =  (R_T * t)[2] / (R_T * inv_K * p)[2];
+
+    // Calculate world coordinate (Pw = R^T * Pc - R^T * t)
+    auto Pc = scale * inv_K * p;
+    auto Pw = R_T * Pc - R_T * t;
+
+    std::cout << Pw << std::endl;
+}
+
+
 auto Vision::initialize() -> void {
     // Waiting for camera
     this->cli_camera = this->create_client<std_srvs::srv::Trigger>("/camera/initialization_complete");
@@ -110,27 +170,54 @@ auto Vision::initialize() -> void {
         std::bind(&Vision::receive_infrared_frame, this, std::placeholders::_1)
     );
 
-    load_config();
+
+    this->sub_camera_info_rgb = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+        "/camera/camera_info/rgb",
+        1,
+        std::bind(&Vision::receive_camera_info_rgb, this, std::placeholders::_1)
+    );
+
+    // Load config
+    this->color = load_config(std::filesystem::current_path().string() + "/src/functional/perception/vision/config/color.yaml");
+    this->extrinsic = load_config(std::filesystem::current_path().string() + "/src/functional/perception/vision/config/extrinsic.yaml");
+
+    // Parse config
+    parse_config();
+
+    // Complete initialization and notify all other nodes
+    this->srv_init = this->create_service<std_srvs::srv::Trigger>(
+        "~/initialization_complete", 
+        std::bind(&Vision::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
+    );
 }
 
-auto Vision::load_config() -> bool {
-    auto config_path = std::filesystem::current_path().string() + "/src/functional/perception/vision/config/config.yaml";
+auto Vision::load_config(const std::string& path) -> YAML::Node {
+    YAML::Node node;
 
     try  {
-        this->config = YAML::LoadFile(config_path);
+        node = YAML::LoadFile(path);
     } catch (YAML::BadFile& e) {
         RCLCPP_ERROR(
             rclcpp::get_logger(""), 
-            "File: %s, Line: %d, Error: %s", 
+            "File: %s, Function: %s, Line: %d, Error: %s", 
             __FILE__, 
+            __FUNCTION__,
             __LINE__, 
             e.what()
         );
 
-        return false;
+        return node;
     }
 
-    return true;
+    return node;
+}
+
+auto Vision::parse_config() -> void {
+    this->T = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(
+        extrinsic["extrinsic"].as<std::vector<double>>().data()
+    );
+
+    // Eigen::Vector3d t = { 0, 0, perpendicular_distance_between_link4_and_camera_z_axes };
 }
 
 
@@ -153,8 +240,8 @@ auto Vision::recognize_color(const sensor_msgs::msg::Image& msg,
 
     // Convert LAB to threthord
     cv::Mat thresholded_frame;
-    auto lowverb = config[color.to_string()]["min"].as<std::vector<int>>();
-    auto upperb = config[color.to_string()]["max"].as<std::vector<int>>();
+    auto lowverb = this->color[color.to_string()]["min"].as<std::vector<int>>();
+    auto upperb = this->color[color.to_string()]["max"].as<std::vector<int>>();
     cv::inRange(lab_frame, lowverb, upperb, thresholded_frame);
 
     // Find color contours
@@ -169,7 +256,7 @@ auto Vision::recognize_color(const sensor_msgs::msg::Image& msg,
 
         if (max_it != contours.end()) {
             auto area = std::abs(cv::contourArea(*max_it));
-            if (area >= 2000) {
+            if (area >= 1000) {
                 RCLCPP_INFO(rclcpp::get_logger(""), "Detected %s", color.to_string().c_str());
 
                 auto msg = cv_bridge::CvImage(
@@ -209,7 +296,10 @@ auto Vision::find_center_point(const sensor_msgs::msg::Image& msg) -> void {
         if (max_it != contours.end()) {
             auto rect = cv::minAreaRect(*max_it);
 
-            RCLCPP_INFO(rclcpp::get_logger(""), "%f, %f", rect.center.x, rect.center.y);
+            // RCLCPP_INFO(rclcpp::get_logger(""), "Center:%f, %f", rect.center.x, rect.center.y);
+            // RCLCPP_INFO(rclcpp::get_logger(""), "Angle:%f", rect.angle);
+
+            pixels_to_world_coordinate({ rect.center.x, rect.center.y });
         }
     }
 }

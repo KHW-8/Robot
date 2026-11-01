@@ -3,17 +3,18 @@
 
 //////////* Headers *//////////
 
-
-/* ROS2 */
-#include <rclcpp/node.hpp>
-#include <std_srvs/srv/trigger.hpp>
-/* Message*/
+/* Core */
 // Peripheral Message
 #include "peripheral_msg/msg/buzzer_request.hpp"
 #include "peripheral_msg/msg/led_request.hpp"
 #include "peripheral_msg/msg/bus_servo_request.hpp"
 // Board Message
 #include "board_msg/msg/packet.hpp"
+#include "std_srvs/srv/trigger.hpp"
+
+/* ROS2 */
+#include <rclcpp/node.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 ///////////////////////////////
 
@@ -25,9 +26,9 @@ public:
 
 public:
     //
-    void read_bus_servo_pos(const std::vector<decltype(peripheral_msg::msg::BusServo::id)>& ids);
+    void read_servo_pos(const std::vector<decltype(peripheral_msg::msg::BusServo::id)>& ids);
 
-    auto set_bus_servo_pos(const decltype(peripheral_msg::msg::BusServo::id)& id, 
+    auto set_servo_pos(const decltype(peripheral_msg::msg::BusServo::id)& id, 
                 const decltype(peripheral_msg::msg::BusServo::angle)& angle, 
                 const decltype(peripheral_msg::msg::BusServo::duration)& duration) -> void;
 
@@ -47,19 +48,25 @@ private:
 
     // Initialization
     auto initialize() -> void;
+    auto initialize_board_controller() -> void;
+    auto initialize_buzzer() -> void;
+    auto initialize_led() -> void;
+    auto initialize_servos() -> void;
+    auto initilize_vision() -> void;
 
 private:
     // Client
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_board_controller;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_bus_servo;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_servo;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_buzzer;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_led;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_vision;
 
 
     // Publisher
     rclcpp::Publisher<board_msg::msg::Packet>::SharedPtr pub_packet;
     rclcpp::Publisher<peripheral_msg::msg::LEDRequest>::SharedPtr pub_led;
-    rclcpp::Publisher<peripheral_msg::msg::BusServoRequest>::SharedPtr pub_bus_servo;
+    rclcpp::Publisher<peripheral_msg::msg::BusServoRequest>::SharedPtr pub_servo;
     rclcpp::Publisher<peripheral_msg::msg::BuzzerRequest>::SharedPtr pub_buzzer;
     
     // Service

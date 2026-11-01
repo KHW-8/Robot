@@ -3,19 +3,26 @@
 
 //////////* Headers *//////////
 
+/* Eigen */
+#include <eigen3/Eigen/Dense>
+
 /* ROS */
 #include <rclcpp/client.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/service.hpp>
 #include <rclcpp/subscription.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <std_srvs/srv/trigger.hpp>
+#include "sensor_msgs/msg/camera_info.hpp"
+#include "std_srvs/srv/trigger.hpp"
 
 /* OpenCV */
 #include <opencv2/core.hpp>
 
 /* YAML-CPP*/
-#include <string>
 #include <yaml-cpp/node/node.h>
+
+/* STD */
+#include <string>
 
 ///////////////////////////////
 
@@ -53,15 +60,25 @@ public:
 
 private:
     // Callback
+    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
+
     auto receive_bgr_frame(const sensor_msgs::msg::Image& msg) -> void;
     auto receive_depth_frame(const sensor_msgs::msg::Image& msg) -> void;
     auto receive_infrared_frame(const sensor_msgs::msg::Image& msg) -> void;
+
+    auto receive_camera_info_rgb(const sensor_msgs::msg::CameraInfo& msg) -> void;
+
+    // Convert
+    auto pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> void;
 
     // Initialization
     auto initialize() -> void;
 
     // Load
-    auto load_config() -> bool;
+    auto load_config(const std::string& path) -> YAML::Node;
+
+    // Parse
+    auto parse_config() -> void;
 
     // Recognition
     auto recognize_color(const sensor_msgs::msg::Image& msg, Color color) -> void;
@@ -69,7 +86,11 @@ private:
 
 private:
     // Config
-    YAML::Node config;
+    YAML::Node color;
+    YAML::Node extrinsic;
+
+    Eigen::Matrix3d K;
+    Eigen::Matrix4d T;
 
     // Client
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_camera;
@@ -78,6 +99,11 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_bgr_frame;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_depth_frame;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_infrared_frame;
+
+    rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr sub_camera_info_rgb;
+
+    // Service
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_init;
 };
 
 ///////////////////////////////

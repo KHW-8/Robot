@@ -5,31 +5,17 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    board_controller = IncludeLaunchDescription(
+    peripheral = IncludeLaunchDescription(
         PathJoinSubstitution([
-            FindPackageShare("board"),
+            FindPackageShare("peripheral"),
             "launch",
-            "board_controller.launch.py"
+            "peripheral.launch.py"
         ])
     )
 
-    bus_servo = Node(
-        package="peripheral",
-        executable="bus_servo",
-        output="screen"
-    )
-
-
-    buzzer = Node(
-        package="peripheral",
-        executable="buzzer",
-        output="screen"
-    )
-
-
-    led = Node(
-        package="peripheral",
-        executable="led",
+    vision = Node(
+        package="vision",
+        executable="vision",
         output="screen"
     )
 
@@ -40,9 +26,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        board_controller,
-        bus_servo,
-        buzzer,
-        led,
+        peripheral,
+        vision,
         robot_controller
     ])

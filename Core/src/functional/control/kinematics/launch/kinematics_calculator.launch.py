@@ -5,14 +5,6 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    robot_controller = IncludeLaunchDescription(
-        PathJoinSubstitution([
-            FindPackageShare("robot"),
-            "launch",
-            "robot_controller.launch.py"
-        ])
-    )
-
     kinematics_calculator = Node(
         package="kinematics",
         executable="kinematics_calculator",
@@ -20,6 +12,5 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        robot_controller,
         kinematics_calculator
     ])

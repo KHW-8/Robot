@@ -1,20 +1,20 @@
-#include "bus_servo.h"
-
 //////////* Headers *//////////
 
-/* STD */
-#include <functional>
-
-/* ROS */
-#include <rclcpp/executors.hpp>
-#include <rclcpp/logger.hpp>
-#include <rclcpp/logging.hpp>
+#include "bus_servo.h"
 
 /* Core */
 //// Global
 #include "utility.hpp"
 //// Physical
 #include "peripheral.h"
+
+/* ROS */
+#include <rclcpp/executors.hpp>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
+
+/* STD */
+#include <functional>
 
 ///////////////////////////////
 

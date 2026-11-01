@@ -6,10 +6,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
+# Core
+find_package(kinematics_msgs REQUIRED)
+# ROS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
-find_package(symengine CONFIG REQUIRED)
+# Symengine
+find_package(symengine REQUIRED)
 
 ## Launches ##
 install(DIRECTORY
@@ -36,6 +40,8 @@ target_include_directories(kinematics_calculator PRIVATE
 )
 
 target_link_libraries(kinematics_calculator PRIVATE
+    # Core
+    kinematics_msgs::kinematics_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs

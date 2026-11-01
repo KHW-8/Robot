@@ -1,15 +1,23 @@
-#include "robot_controller.h"
-
 //////////* Headers *//////////
+
+#include "robot_controller.h"
 
 /* Core */
 //// Message
 #include "board_msg/msg/packet.hpp"
 //// Physical
 #include "bus_servo.h"
+
 /* ROS2 */
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
+
+/* STD */
+#include <cstdint>
+#include <chrono>
+#include <map>
+#include <thread>
+#include <vector>
 
 ///////////////////////////////
 
@@ -21,7 +29,7 @@ RobotController::RobotController()
     initialize();
 }
 
-auto RobotController::read_bus_servo_pos(const std::vector<decltype(peripheral_msg::msg::BusServo::id)>& ids) -> void {
+auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msg::msg::BusServo::id)>& ids) -> void {
    // Create request
     auto request = peripheral_msg::msg::BusServoRequest();
     request.cmd = static_cast<uint8_t>(BusServoCMD::READ_ANGLE);
@@ -35,7 +43,7 @@ auto RobotController::read_bus_servo_pos(const std::vector<decltype(peripheral_m
         request.servos.emplace_back(servo);
     }
 
-    this->pub_bus_servo->publish(request);
+    this->pub_servo->publish(request);
 
     // Print log
     for (const auto& servo : request.servos) 
@@ -43,9 +51,9 @@ auto RobotController::read_bus_servo_pos(const std::vector<decltype(peripheral_m
 }
 
 
-auto RobotController::set_bus_servo_pos(const decltype(peripheral_msg::msg::BusServo::id)& id, 
-                                         const decltype(peripheral_msg::msg::BusServo::angle)& angle, 
-                                         const decltype(peripheral_msg::msg::BusServo::duration)& duration) -> void
+auto RobotController::set_servo_pos(const decltype(peripheral_msg::msg::BusServo::id)& id, 
+                                    const decltype(peripheral_msg::msg::BusServo::angle)& angle, 
+                                    const decltype(peripheral_msg::msg::BusServo::duration)& duration) -> void
 {
     // Generate servo message
     auto servo = peripheral_msg::msg::BusServo();
@@ -59,7 +67,7 @@ auto RobotController::set_bus_servo_pos(const decltype(peripheral_msg::msg::BusS
     request.servos.emplace_back(servo);
 
     // Send message
-    this->pub_bus_servo->publish(request);
+    this->pub_servo->publish(request);
 
     // Print log
     for (const auto& servo : request.servos) 
@@ -123,39 +131,74 @@ auto RobotController::initialization_complete([[maybe_unused]]const std::shared_
 }
 
 auto RobotController::initialize() -> void {
-    // Wait for board board controller
-    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
-    this->cli_board_controller.get()->wait_for_service();
-
-    // Create a publisher of host packet
-    this->pub_packet = this->create_publisher<board_msg::msg::Packet>("/board_controller/packet", 10);
-
-    // Wait for board bus servo
-    this->cli_bus_servo = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
-    this->cli_bus_servo.get()->wait_for_service();
-
-    // Create a publisher of bus servo 
-    this->pub_bus_servo = this->create_publisher<peripheral_msg::msg::BusServoRequest>("/bus_servo", 10);
-
-    // Wait for board buzzer
-    this->cli_buzzer = this->create_client<std_srvs::srv::Trigger>("/buzzer/initialization_complete");
-    this->cli_buzzer.get()->wait_for_service();
-
-    // Create a publisher of buzzer
-    this->pub_buzzer = this->create_publisher<peripheral_msg::msg::BuzzerRequest>("/buzzer", 10);
-
-    // Wait for board LED
-    this->cli_led = this->create_client<std_srvs::srv::Trigger>("/led/initialization_complete");
-    this->cli_led.get()->wait_for_service();
-
-    // Create a publisher of LED
-    this->pub_led = this->create_publisher<peripheral_msg::msg::LEDRequest>("/led",10);
+    initialize_board_controller();
+    initialize_buzzer();
+    initialize_led();
+    initialize_servos();
+    initilize_vision();
 
     // Complete initialization and notify all other nodes
     this->srv_ini = this->create_service<std_srvs::srv::Trigger>(
         "~/initialization_complete", 
         std::bind(&RobotController::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
     );
+}
+
+auto RobotController::initialize_board_controller() -> void {
+    // Wait for board controller
+    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
+    this->cli_board_controller->wait_for_service();
+
+    // Create a publisher for board controller
+    this->pub_packet = this->create_publisher<board_msg::msg::Packet>("/board_controller/packet", 10);
+}
+
+auto RobotController::initialize_buzzer() -> void {
+    // Wait for board buzzer
+    this->cli_buzzer = this->create_client<std_srvs::srv::Trigger>("/buzzer/initialization_complete");
+    this->cli_buzzer->wait_for_service();
+
+    // Create a publisher for buzzer
+    this->pub_buzzer = this->create_publisher<peripheral_msg::msg::BuzzerRequest>("/buzzer", 10);
+}
+
+auto RobotController::initialize_led() -> void {
+    // Wait for LED
+    this->cli_led = this->create_client<std_srvs::srv::Trigger>("/led/initialization_complete");
+    this->cli_led->wait_for_service();
+
+    // Create a publisher for LED
+    this->pub_led = this->create_publisher<peripheral_msg::msg::LEDRequest>("/led",10);
+}
+
+auto RobotController::initialize_servos() -> void {
+    // Wait for servo
+    this->cli_servo = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
+    this->cli_servo->wait_for_service();
+
+    // Create a publisher for servo 
+    this->pub_servo = this->create_publisher<peripheral_msg::msg::BusServoRequest>("/bus_servo", 10);
+
+    // Set servos' angle
+    std::map<uint8_t, uint8_t> map = {
+        {1, 54},
+        {2, 120},
+        {3, 26},
+        {4, 192},
+        {5, 144},
+        {6, 120},
+    };
+
+    for (auto pair : map) {
+        set_servo_pos(pair.first, pair.second, 0.5);
+        std::this_thread::sleep_for(std::chrono::milliseconds(600));
+    }
+}
+
+auto RobotController::initilize_vision() -> void {
+    // Wait for board controller
+    this->cli_vision = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
+    this->cli_vision->wait_for_service();
 }
 
 

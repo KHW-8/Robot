@@ -3,13 +3,21 @@
 
 //////////* Headers *//////////
 
+/* Core */
+#include "kinematics_msgs/msg/transformation.hpp"
+
 /* ROS */
 #include <rclcpp/node.hpp>
 #include <rclcpp/service.hpp>
-#include <std_srvs/srv/trigger.hpp>
-#include <symengine/matrix.h>
+#include "std_srvs/srv/trigger.hpp"
+
+/* STD */
 #include <vector>
+
 /* SymEngine */
+#include <symengine/matrix.h>
+
+
 
 ///////////////////////////////
 
@@ -35,6 +43,8 @@ private:
     auto rpy(const SymEngine::DenseMatrix& rotation_matrix) -> void;
 
     // Callback
+    auto receive_transformation_from_vision(const kinematics_msgs::msg::Transformation& msg);
+
     auto initialization_complete([[maybe_unused]]std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
 
     // Generate
@@ -49,6 +59,9 @@ private:
 
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
+
+    // Subscription
+    rclcpp::Subscription<kinematics_msgs::msg::Transformation>::SharedPtr sub_vision;
 
     // Kinematics
     std::vector<SymEngine::DenseMatrix> transformation_operators;
