@@ -13,6 +13,12 @@ def generate_launch_description():
         ])
     )
 
+    kinematics_calculator = Node(
+       package="kinematics",
+        executable="kinematics_calculator",
+        output="screen" 
+    )
+
     vision = Node(
         package="vision",
         executable="vision",
@@ -27,6 +33,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         peripheral,
+        kinematics_calculator,
         vision,
         robot_controller
     ])

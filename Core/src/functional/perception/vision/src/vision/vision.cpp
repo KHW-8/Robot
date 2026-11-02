@@ -17,6 +17,7 @@
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include "kinematics_msgs/msg/transformation.hpp"
 #include "sensor_msgs/msg/camera_info.hpp"
 #include "std_msgs/msg/header.hpp"
 #include "std_srvs/srv/trigger.hpp"
@@ -176,6 +177,8 @@ auto Vision::initialize() -> void {
         1,
         std::bind(&Vision::receive_camera_info_rgb, this, std::placeholders::_1)
     );
+
+    this->pub_kinematics_calculator = this->create_publisher<kinematics_msgs::msg::Transformation>("~/extrinsic_parameters", 1);
 
     // Load config
     this->color = load_config(std::filesystem::current_path().string() + "/src/functional/perception/vision/config/color.yaml");

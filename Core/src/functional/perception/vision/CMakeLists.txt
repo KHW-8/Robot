@@ -6,6 +6,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 ## Find dependencies ##
+# Core
+find_package(kinematics_msgs REQUIRED)
 # ROS
 find_package(ament_cmake REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -32,6 +34,8 @@ target_include_directories(vision PUBLIC
 )
 
 target_link_libraries(vision PUBLIC
+    # Core
+    kinematics_msgs::kinematics_msgs
     # OpenCV
     opencv_core
     opencv_highgui

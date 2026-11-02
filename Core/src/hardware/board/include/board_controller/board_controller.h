@@ -39,9 +39,6 @@ private:
     // Initialization
     auto initialize() -> void;
 
-    // Thread
-    auto listen() -> void;
-
 
 private:
     // Subscription

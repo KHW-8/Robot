@@ -3,12 +3,16 @@
 
 //////////* Headers *//////////
 
+/* Core */
+#include "kinematics_msgs/msg/transformation.hpp"
+
 /* Eigen */
 #include <eigen3/Eigen/Dense>
 
 /* ROS */
 #include <rclcpp/client.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/publisher.hpp>
 #include <rclcpp/service.hpp>
 #include <rclcpp/subscription.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -94,6 +98,9 @@ private:
 
     // Client
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_camera;
+
+    // Publisher
+    rclcpp::Publisher<kinematics_msgs::msg::Transformation>::SharedPtr pub_kinematics_calculator;
 
     // Subscription
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_bgr_frame;

@@ -129,7 +129,7 @@ auto KinematicsCalculator::generate_forward_kinematics_equation() -> void {
 
 auto KinematicsCalculator::initialize() -> void {
     this->sub_vision = this->create_subscription<kinematics_msgs::msg::Transformation>(
-        "/vision/transformation", 
+        "/vision/extrinsic_parameters", 
         1,
         std::bind(&KinematicsCalculator::receive_transformation_from_vision, this, std::placeholders::_1)
     );

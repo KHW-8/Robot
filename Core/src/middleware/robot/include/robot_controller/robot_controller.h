@@ -4,17 +4,17 @@
 //////////* Headers *//////////
 
 /* Core */
-// Peripheral Message
+//// Application
+#include "gui_msgs/msg/command.hpp"
+//// Hardware
 #include "peripheral_msg/msg/buzzer_request.hpp"
 #include "peripheral_msg/msg/led_request.hpp"
 #include "peripheral_msg/msg/bus_servo_request.hpp"
-// Board Message
 #include "board_msg/msg/packet.hpp"
-#include "std_srvs/srv/trigger.hpp"
 
 /* ROS2 */
 #include <rclcpp/node.hpp>
-#include <std_srvs/srv/trigger.hpp>
+#include "std_srvs/srv/trigger.hpp"
 
 ///////////////////////////////
 
@@ -43,8 +43,9 @@ public:
 
 private:
     // Callback
-    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
+    auto receive_control_panel_msg(const gui_msgs::msg::Command& msg) -> void;
 
+    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
 
     // Initialization
     auto initialize() -> void;
@@ -52,7 +53,8 @@ private:
     auto initialize_buzzer() -> void;
     auto initialize_led() -> void;
     auto initialize_servos() -> void;
-    auto initilize_vision() -> void;
+    auto initialize_vision() -> void;
+    auto initialize_control_panel() -> void;
 
 private:
     // Client
@@ -62,7 +64,6 @@ private:
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_led;
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_vision;
 
-
     // Publisher
     rclcpp::Publisher<board_msg::msg::Packet>::SharedPtr pub_packet;
     rclcpp::Publisher<peripheral_msg::msg::LEDRequest>::SharedPtr pub_led;
@@ -71,6 +72,9 @@ private:
     
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
+
+    // Subscription
+    rclcpp::Subscription<gui_msgs::msg::Command>::SharedPtr sub_gui;
 };
 
 

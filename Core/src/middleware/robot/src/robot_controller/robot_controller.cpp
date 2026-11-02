@@ -3,14 +3,16 @@
 #include "robot_controller.h"
 
 /* Core */
-//// Message
+//// Hardware
 #include "board_msg/msg/packet.hpp"
-//// Physical
 #include "bus_servo.h"
+#include "gui_msgs/msg/command.hpp"
 
 /* ROS2 */
+#include <functional>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 
 /* STD */
 #include <cstdint>
@@ -124,6 +126,11 @@ auto RobotController::set_led(decltype(peripheral_msg::msg::LED::id) led_id,
     );
 }
 
+auto RobotController::receive_control_panel_msg(const gui_msgs::msg::Command& msg) -> void {
+    set_servo_pos(msg.servo_id, msg.angle, 1);
+}
+
+
 auto RobotController::initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
                                               const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void 
 {
@@ -135,7 +142,8 @@ auto RobotController::initialize() -> void {
     initialize_buzzer();
     initialize_led();
     initialize_servos();
-    initilize_vision();
+    initialize_vision();
+    initialize_control_panel();
 
     // Complete initialization and notify all other nodes
     this->srv_ini = this->create_service<std_srvs::srv::Trigger>(
@@ -181,26 +189,33 @@ auto RobotController::initialize_servos() -> void {
 
     // Set servos' angle
     std::map<uint8_t, uint8_t> map = {
-        {1, 54},
+        {1, 0},
         {2, 120},
-        {3, 26},
-        {4, 192},
+        {3, 30},
+        {4, 195},
         {5, 144},
         {6, 120},
     };
 
     for (auto pair : map) {
-        set_servo_pos(pair.first, pair.second, 0.5);
-        std::this_thread::sleep_for(std::chrono::milliseconds(600));
+        set_servo_pos(pair.first, pair.second, 1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
-auto RobotController::initilize_vision() -> void {
+auto RobotController::initialize_vision() -> void {
     // Wait for board controller
     this->cli_vision = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
     this->cli_vision->wait_for_service();
 }
 
+auto RobotController::initialize_control_panel() -> void {
+    this->sub_gui = this->create_subscription<gui_msgs::msg::Command>(
+        "/control_panel/command",
+        1,
+        std::bind(&RobotController::receive_control_panel_msg, this, std::placeholders::_1)
+    );
+}
 
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);

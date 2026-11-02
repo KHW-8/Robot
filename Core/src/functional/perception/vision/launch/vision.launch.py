@@ -13,6 +13,14 @@ def generate_launch_description():
         ])
     )
 
+    kinematics_calculator = IncludeLaunchDescription(
+        PathJoinSubstitution([
+            FindPackageShare("kinematics"),
+            "launch",
+            "kinematics_calculator.launch.py"
+        ])
+    )
+
     vision = Node(
         package="vision",
         executable="vision",
@@ -21,5 +29,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         camera,
+        kinematics_calculator,
         vision
     ])

@@ -12,6 +12,7 @@
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/utilities.hpp>
 
 ///////////////////////////////
 
@@ -27,6 +28,9 @@ BoardController::BoardController()
 BoardController::~BoardController() {
     if (this->serial.is_open())
         close();
+
+    if (this->thread_receive.joinable())
+        this->thread_receive.join();
 }
 
 auto BoardController::connect(const std::string& port) -> bool {
@@ -109,7 +113,7 @@ auto BoardController::transmit(const std::vector<uint8_t>& vector_data) -> void 
 auto BoardController::receive() -> void {
     boost::asio::streambuf streambuf;
 
-    while (true) {
+    while (rclcpp::ok()) {
         boost::asio::read_until(this->serial, streambuf, "\n");
 
         std::istream is(&streambuf);
@@ -181,11 +185,6 @@ auto BoardController::initialize() -> void {
         "~/initialization_complete", 
         std::bind(&BoardController::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
     );
-}
-
-auto BoardController::listen() -> void {
-    // Create a thread 
-    this->thread_receive = std::thread(&BoardController::receive, this);
 }
 
 auto main(int argc, char** argv) -> int {

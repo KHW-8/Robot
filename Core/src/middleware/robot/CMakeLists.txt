@@ -9,6 +9,7 @@ endif()
 # Core
 find_package(board_msg REQUIRED)
 find_package(peripheral_msg REQUIRED)
+find_package(gui_msgs REQUIRED)
 # ROS2
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -36,12 +37,13 @@ target_include_directories(robot_controller PRIVATE
 )
 
 target_link_libraries(robot_controller PRIVATE
+    # Core
+    board_msg::board_msg
+    peripheral_msg::peripheral_msg
+    gui_msgs::gui_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
-    # ArmBot
-    board_msg::board_msg
-    peripheral_msg::peripheral_msg
 )
 
 # Install all targets
