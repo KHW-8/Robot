@@ -5,6 +5,7 @@
 /* Core */
 //// Kinematics
 #include "math.h"
+#include <symengine/simplify.h>
 
 ///////////////////////////////
 
@@ -80,7 +81,11 @@ auto ForwardKinematics::generate_transformation_operators(std::vector<DHParamete
 
 
 auto ForwardKinematics::generate_equation(std::vector<SymEngine::DenseMatrix> v) -> SymEngine::DenseMatrix {
-    return product(v);
+    auto T = product(v);
+
+    simplify(T);
+    
+    return T;
 }
 
 auto ForwardKinematics::generate_equation(std::vector<DHParameter> v) -> SymEngine::DenseMatrix {

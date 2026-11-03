@@ -4,6 +4,7 @@
 //////////* Headers *//////////
 
 /* Core */
+#include "inverse_kinematics.h"
 #include "kinematics_msgs/msg/transformation.hpp"
 
 /* ROS */
@@ -12,6 +13,7 @@
 #include "std_srvs/srv/trigger.hpp"
 
 /* STD */
+#include <cstdint>
 #include <vector>
 
 /* SymEngine */
@@ -53,6 +55,9 @@ private:
     // Initialization
     auto initialize() -> void;
 
+    // Print
+    auto print_solutions(std::vector<Solution> solutions) -> void;
+
 private:
     // Client
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_robot_controller;
@@ -66,6 +71,8 @@ private:
     // Kinematics
     std::vector<SymEngine::DenseMatrix> transformation_operators;
     SymEngine::DenseMatrix forward_kinematics_equation;
+
+    std::map<uint8_t, std::pair<double, double> > angle_interval_map; // angle : inteval
 };
 
 ///////////////////////////////

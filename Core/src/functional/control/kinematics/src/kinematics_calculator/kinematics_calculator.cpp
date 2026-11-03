@@ -12,6 +12,7 @@
 #include "utility.hpp"
 
 /* ROS */
+#include <cstdio>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
@@ -36,7 +37,7 @@ auto alpha4 = deg_to_rad(90);
 
 auto perpendicular_distance_between_link2_joint_z_axes = 0.101;
 auto perpendicular_distance_between_link3_joint_z_axes = 0.095;
-auto perpendicular_distance_between_link4_joint_x_axes = 0.4;
+auto perpendicular_distance_between_link4_joint_x_axes = 0.04;
 
 ////////////////////////////////////////
 
@@ -51,8 +52,10 @@ KinematicsCalculator::KinematicsCalculator()
 }
 
 auto KinematicsCalculator::receive_transformation_from_vision(const kinematics_msgs::msg::Transformation& msg) {
-    auto T = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(msg.transformation.data());
-    InverseKinematics::calculate(T);
+    InverseKinematics::calculate(
+        Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(msg.transformation.data()), 
+        this->angle_interval_map
+    );
 }
 
 
@@ -66,22 +69,23 @@ auto KinematicsCalculator::initialization_complete([[maybe_unused]]std::shared_p
 auto KinematicsCalculator::calculate(KinematicsType type) -> void {
     switch (type) {
     case KinematicsType::FORWARD: {
-        auto T = forward_kinematics_equation;
+        auto T = this->forward_kinematics_equation;
 
         substitute(T, SymEngine::symbol("α1"), SymEngine::real_double(alpha1));
         substitute(T, SymEngine::symbol("α4"), SymEngine::real_double(alpha4));
         substitute(T, SymEngine::symbol("a2"), SymEngine::real_double(perpendicular_distance_between_link2_joint_z_axes));
         substitute(T, SymEngine::symbol("a3"), SymEngine::real_double(perpendicular_distance_between_link3_joint_z_axes));
         substitute(T, SymEngine::symbol("d5"), SymEngine::real_double(perpendicular_distance_between_link4_joint_x_axes));
-        substitute(T, SymEngine::symbol("Θ1"), SymEngine::real_double(deg_to_rad(54)));
-        substitute(T, SymEngine::symbol("Θ2"), SymEngine::real_double(deg_to_rad(120)));
-        substitute(T, SymEngine::symbol("Θ3"), SymEngine::real_double(deg_to_rad(26)));
-        substitute(T, SymEngine::symbol("Θ4"), SymEngine::real_double(deg_to_rad(192)));
-        substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(deg_to_rad(144)));
+        substitute(T, SymEngine::symbol("Θ1"), SymEngine::real_double(deg_to_rad(120)));
+        substitute(T, SymEngine::symbol("Θ2"), SymEngine::real_double(deg_to_rad(140)));
+        substitute(T, SymEngine::symbol("Θ3"), SymEngine::real_double(deg_to_rad(195)));
+        substitute(T, SymEngine::symbol("Θ4"), SymEngine::real_double(deg_to_rad(30)));
+        substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(deg_to_rad(120)));
 
         std::cout << T << std::endl;
 
-        InverseKinematics::calculate(T);
+        auto solutions = InverseKinematics::calculate(T, this->angle_interval_map);
+        print_solutions(solutions);
     } break;
     case KinematicsType::INVERSE: {
     } break;
@@ -140,6 +144,27 @@ auto KinematicsCalculator::initialize() -> void {
         "~/initialization_complete", 
         std::bind(&KinematicsCalculator::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
     );
+
+    this->angle_interval_map = {
+        {1, {0, 190}},
+        {2, {80, 210}},
+        {3, {20, 235}},
+        {4, {0, 240}},
+        {5, {0, 240}},
+    };
+}
+
+auto KinematicsCalculator::print_solutions(std::vector<Solution> solutions) -> void {
+    for (auto s : solutions) {
+        RCLCPP_INFO(rclcpp::get_logger(""),
+            "Θ1: %f, Θ2: %f, Θ3: %f, Θ4: %f, Θ5: %f",
+            s.theta1,
+            s.theta2,
+            s.theta3,
+            s.theta4,
+            s.theta5
+        );
+    }
 }
 
 auto main(int argc, const char* argv[]) -> int {
@@ -149,5 +174,8 @@ auto main(int argc, const char* argv[]) -> int {
 
     return 0;
 }
+
+
+
 
 /////////////////////////////////

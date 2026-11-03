@@ -193,7 +193,7 @@ auto RobotController::initialize_servos() -> void {
         {2, 120},
         {3, 30},
         {4, 195},
-        {5, 144},
+        {5, 140},
         {6, 120},
     };
 
