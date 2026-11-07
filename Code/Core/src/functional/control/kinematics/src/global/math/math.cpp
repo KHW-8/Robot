@@ -4,7 +4,8 @@
 //////////* Headers *//////////
 
 /* STD */
-#include <limits>
+#include <cstddef>
+#include <cstdlib>
 #include <numbers>
 
 /* SymEngine */
@@ -14,6 +15,10 @@
 
 
 //////////* Functions *//////////
+
+auto equals(double a, double b) -> bool {
+    return std::abs(a - b) < EPSILON;
+}
 
 auto deg_to_rad(double degree) -> double {
     return degree * std::numbers::pi / 180;
@@ -29,6 +34,19 @@ auto pulse_to_deg(size_t pulse) -> double {
 
 auto pulse_to_rad(size_t pulse) -> double {
     return deg_to_rad(pulse_to_deg(pulse));
+}
+
+auto to_equivalent_angle(double angle) -> double {
+    
+    if (angle > 0) {
+        while (equals(angle, 360) || angle > 360)
+            angle -= 360;
+    } else if (angle < 0) {
+        while (equals(angle, -360) || angle < -360)
+            angle += 360;
+    }
+
+    return angle;
 }
 
 auto substitute(SymEngine::DenseMatrix& m, 
@@ -76,19 +94,36 @@ auto simplify(SymEngine::DenseMatrix& m) -> void {
     }
 }
 
+auto nsimplify(SymEngine::DenseMatrix& m) -> void {
+    for (size_t i = 0; i < m.nrows(); i++) {
+        for (size_t j = 0; j < m.ncols(); j++) {
+            auto element = m.get(i, j);
+
+            // Simplify elements
+            auto res = nsimplify(element);
+            if (res.first) 
+                element = res.second;
+
+            m.set(i, j, element);
+        }
+    }
+}
+
+
 auto nsimplify(SymEngine::RCP<const SymEngine::Basic> element) -> std::pair<bool, SymEngine::RCP<const SymEngine::Basic> > {
     std::pair<bool, SymEngine::RCP<const SymEngine::Basic> > res;
 
     switch (element->get_type_code()) {
     case SymEngine::TypeID::SYMENGINE_REAL_DOUBLE: {
-        const auto num = dynamic_cast<const SymEngine::RealDouble*>(element.get())->as_double();
+        const auto& num = dynamic_cast<const SymEngine::RealDouble*>(element.get())->as_double();
+        const auto& abs_num = std::abs(num);
 
-        auto integer_part = std::floor(num);
-        auto fractional_part = num - integer_part;
+        auto integer_part = std::floor(abs_num);
+        auto fractional_part = abs_num - integer_part;
 
-        if (fractional_part < std::numeric_limits<double>::epsilon()) {
+        if (fractional_part < EPSILON) {
             res.first = true;
-            res.second = SymEngine::integer(static_cast<int>(integer_part));
+            res.second = SymEngine::integer(static_cast<int>(num < 0 ? -integer_part : integer_part));
         }
     } break;
     default:

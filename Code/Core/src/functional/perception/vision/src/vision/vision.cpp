@@ -142,8 +142,6 @@ auto Vision::pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> void {
     // Calculate world coordinate (Pw = R^T * Pc - R^T * t)
     auto Pc = scale * inv_K * p;
     auto Pw = R_T * Pc - R_T * t;
-
-    std::cout << Pw << std::endl;
 }
 
 
