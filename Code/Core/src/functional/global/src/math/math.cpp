@@ -6,6 +6,7 @@
 /* STD */
 #include <cstddef>
 #include <cstdlib>
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <numbers>
 
 /* SymEngine */
@@ -91,6 +92,52 @@ auto simplify(SymEngine::DenseMatrix& m) -> void {
         for (size_t j = 0; j < m.ncols(); j++) {
             m.set(i, j, SymEngine::simplify(m.get(i, j)));
         }
+    }
+}
+
+auto inverse_transformation_matrix(Eigen::Matrix4d T) -> Eigen::Matrix4d {
+     auto R = T.block(0, 0,3, 3);
+     auto t = T.topRightCorner<3, 1>();
+
+    auto RT = R.transpose();
+    
+    auto p = - RT * t;
+
+    Eigen::Matrix4d inversed_T;
+    inversed_T.block<3, 3>(0, 0) = RT;
+    inversed_T.block<3, 1>(0, 3) = p;
+    inversed_T.block<1, 4>(3, 0) = Eigen::Vector4d{0, 0, 0 , 1};
+
+    return inversed_T;
+}
+
+auto nsimplify(const double& num) -> double {
+    const auto& abs_num = std::abs(num);
+
+    auto integer_part = std::floor(abs_num);
+    auto fractional_part = abs_num - integer_part;
+
+    double res = num;
+
+    if (fractional_part < EPSILON) 
+        res = num < 0 ? -integer_part : integer_part;
+
+    if (equals(res, -0))
+        res = 0;
+
+    return res;
+}
+
+auto nsimplify(Eigen::Vector3d& v) -> void {
+    for (int i = 0; i < v.rows(); i++) {
+        v[i] = nsimplify(v[i]);
+    }
+}
+
+auto nsimplify(Eigen::Matrix4d& m) -> void {
+    for (int i = 0; i < m.rows(); i++) {
+        for (int j = 0; j < m.cols(); j++) 
+            m(i, j) = nsimplify(m(i, j));
     }
 }
 

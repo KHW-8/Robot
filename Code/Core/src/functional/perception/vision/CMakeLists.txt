@@ -15,6 +15,8 @@ find_package(rclcpp REQUIRED)
 find_package(std_srvs REQUIRED)
 # OpenCV
 find_package(OpenCV REQUIRED COMPONENTS core highgui)
+# SymEngine
+find_package(symengine REQUIRED)
 # YAML-CPP
 find_package(yaml-cpp REQUIRED)
 
@@ -27,10 +29,17 @@ install(DIRECTORY
 )
 
 ## Targets ##
-add_executable(vision src/vision/vision.cpp)
+file(GLOB_RECURSE vision_src
+    ${CMAKE_SOURCE_DIR}/src/vision/*.cpp
+    ${CMAKE_SOURCE_DIR}/../../global/src/math/*.cpp
+)
+
+
+add_executable(vision ${vision_src})
 
 target_include_directories(vision PUBLIC
     ${CMAKE_SOURCE_DIR}/include/vision
+    ${CMAKE_SOURCE_DIR}/../../global/include/math
 )
 
 target_link_libraries(vision PUBLIC
@@ -44,6 +53,8 @@ target_link_libraries(vision PUBLIC
     rclcpp::rclcpp
     std_srvs::std_srvs
     sensor_msgs::sensor_msgs
+    # SymEngine
+    symengine
     # YAML-CPP
     yaml-cpp::yaml-cpp
 )

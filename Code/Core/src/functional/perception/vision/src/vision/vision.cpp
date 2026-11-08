@@ -1,6 +1,9 @@
 //////////* Headers *//////////
 #include "vision.h"
 
+/* Core */
+#include "math.h"
+
 /* Eigen */
 #include <eigen3/Eigen/src/Core/Matrix.h>
 #include <eigen3/Eigen/src/Core/util/Constants.h>
@@ -30,6 +33,7 @@
 
 /* STD */
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -110,7 +114,7 @@ auto Vision::receive_camera_info_rgb(const sensor_msgs::msg::CameraInfo& msg) ->
     this->K = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(msg.k.data());
 }
 
-auto Vision::pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> void {
+auto Vision::pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> Eigen::Vector3d {
     // Convert the pixel coordinate to homogeneous form.
     Eigen::Vector3d p = { pos.x(), pos.y(), 1 };
 
@@ -141,7 +145,10 @@ auto Vision::pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> void {
 
     // Calculate world coordinate (Pw = R^T * Pc - R^T * t)
     auto Pc = scale * inv_K * p;
-    auto Pw = R_T * Pc - R_T * t;
+    Eigen::Vector3d Pw = R_T * Pc - R_T * t;
+    nsimplify(Pw);
+
+    return Pw;
 }
 
 
@@ -214,11 +221,36 @@ auto Vision::load_config(const std::string& path) -> YAML::Node {
 }
 
 auto Vision::parse_config() -> void {
-    this->T = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(
+    /* Calculate extrinsic parameters */
+    // Parse config file and get robot arm tranformation matrix
+    auto T_robot_arm = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(
         extrinsic["extrinsic"].as<std::vector<double>>().data()
     );
 
-    // Eigen::Vector3d t = { 0, 0, perpendicular_distance_between_link4_and_camera_z_axes };
+    // Add a rotation about Z axis and a translation along Y axis to robot arm tranformation matrix
+    double theta = -90;
+
+    Eigen::Matrix4d R_Z_theta {
+        {std::cos(deg_to_rad(theta)), std::sin(deg_to_rad(theta)), 0,   0},
+        {std::sin(deg_to_rad(theta)), std::cos(deg_to_rad(theta)), 0,   0},
+        {0,                                     0,                                     1,   0},
+        {0,                                     0,                                     0,   1}
+    };
+    nsimplify(R_Z_theta);
+    
+    
+    Eigen::Matrix4d D_Y{
+        {1, 0, 0, 0},
+        {0, 1, 0, perpendicular_distance_between_link4_and_camera_z_axes},
+        {0, 0, 1, 0},
+        {0, 0, 0, 1}
+    };
+
+    auto T = T_robot_arm * D_Y * R_Z_theta;
+
+
+    // Inverse the transformation matrix to get extrinsic parameters (The real transformation matrix that we want).
+    this->T = inverse_transformation_matrix(T);
 }
 
 
@@ -297,10 +329,14 @@ auto Vision::find_center_point(const sensor_msgs::msg::Image& msg) -> void {
         if (max_it != contours.end()) {
             auto rect = cv::minAreaRect(*max_it);
 
-            // RCLCPP_INFO(rclcpp::get_logger(""), "Center:%f, %f", rect.center.x, rect.center.y);
-            // RCLCPP_INFO(rclcpp::get_logger(""), "Angle:%f", rect.angle);
+            RCLCPP_INFO(rclcpp::get_logger(""), "Center:%f, %f", rect.center.x, rect.center.y);
+            RCLCPP_INFO(rclcpp::get_logger(""), "Angle:%f", rect.angle);
 
-            pixels_to_world_coordinate({ rect.center.x, rect.center.y });
+            auto P = pixels_to_world_coordinate({ rect.center.x, rect.center.y });
+
+            RCLCPP_INFO(rclcpp::get_logger(""), 
+                                         "X: %f, Y: %f, Z: %f", 
+                                        P.x(), P.y(), P.z());
         }
     }
 }
