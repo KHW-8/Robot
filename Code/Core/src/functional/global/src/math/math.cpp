@@ -21,6 +21,11 @@ auto equals(double a, double b) -> bool {
     return std::abs(a - b) < EPSILON;
 }
 
+auto is_in_interval(double x, std::pair<double, double> interval) -> bool {
+    return (x > interval.first || equals(x, interval.first)) && (equals(x, interval.second) || x < interval.second);
+}
+
+
 auto deg_to_rad(double degree) -> double {
     return degree * std::numbers::pi / 180;
 }
@@ -46,6 +51,8 @@ auto to_equivalent_angle(double angle) -> double {
         while (equals(angle, -360) || angle < -360)
             angle += 360;
     }
+
+    angle = nsimplify(angle);
 
     return angle;
 }
@@ -95,22 +102,6 @@ auto simplify(SymEngine::DenseMatrix& m) -> void {
     }
 }
 
-auto inverse_transformation_matrix(Eigen::Matrix4d T) -> Eigen::Matrix4d {
-     auto R = T.block(0, 0,3, 3);
-     auto t = T.topRightCorner<3, 1>();
-
-    auto RT = R.transpose();
-    
-    auto p = - RT * t;
-
-    Eigen::Matrix4d inversed_T;
-    inversed_T.block<3, 3>(0, 0) = RT;
-    inversed_T.block<3, 1>(0, 3) = p;
-    inversed_T.block<1, 4>(3, 0) = Eigen::Vector4d{0, 0, 0 , 1};
-
-    return inversed_T;
-}
-
 auto nsimplify(const double& num) -> double {
     const auto& abs_num = std::abs(num);
 
@@ -119,10 +110,12 @@ auto nsimplify(const double& num) -> double {
 
     double res = num;
 
+    
     if (fractional_part < EPSILON) 
         res = num < 0 ? -integer_part : integer_part;
 
-    if (equals(res, -0))
+
+    if (equals(res, -0)) 
         res = 0;
 
     return res;

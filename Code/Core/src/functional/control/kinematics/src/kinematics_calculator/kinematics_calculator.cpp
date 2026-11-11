@@ -6,21 +6,25 @@
 //// Kinematics
 #include "forward_kinematics.h"
 #include "inverse_kinematics.h"
-//// Global
+//// Interfaces
 #include "kinematics_msgs/msg/transformation.hpp"
+//// Global
 #include "math.h"
 #include "utility.hpp"
 
+/* Eigen */
+#include <eigen3/Eigen/src/Core/Matrix.h>
+
 /* ROS */
-#include <algorithm>
-#include <cstdint>
-#include <cstdio>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
 /* STD */
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
 #include <cmath>
 #include <functional>
 
@@ -49,12 +53,12 @@ KinematicsCalculator::KinematicsCalculator()
 {
     initialize();
 
-    calculate(KinematicsType::FORWARD);
+    calculate(KinematicsType::INVERSE);
 }
 
 auto KinematicsCalculator::receive_transformation_from_vision(const kinematics_msgs::msg::Transformation& msg) {
     InverseKinematics::calculate(
-        Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(msg.transformation.data()), 
+        Eigen::Matrix4d(msg.transformation.data()),
         this->theta_interval_map
     );
 }
@@ -159,8 +163,22 @@ auto KinematicsCalculator::calculate(KinematicsType type) -> void {
         substitute(T, SymEngine::symbol("Θ3"), SymEngine::real_double(deg_to_rad(theta3)));
         substitute(T, SymEngine::symbol("Θ4"), SymEngine::real_double(deg_to_rad(theta4)));
         substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(deg_to_rad(theta5)));
+
+        auto solutions = InverseKinematics::calculate(
+            T, 
+            this->theta_interval_map
+        );
+
+        print_solutions(solutions);
     } break;
     case KinematicsType::INVERSE: {
+        auto solutions = InverseKinematics::calculate(
+            Eigen::Vector3d{0.2, -0.1, 0.05}, 
+            90,
+            this->theta_interval_map
+        );
+
+        print_solutions(solutions);
     } break;
     default: break;
     }

@@ -32,6 +32,7 @@ install(DIRECTORY
 file(GLOB_RECURSE vision_src
     ${CMAKE_SOURCE_DIR}/src/vision/*.cpp
     ${CMAKE_SOURCE_DIR}/../../global/src/math/*.cpp
+    ${CMAKE_SOURCE_DIR}/../../global/src/kinematics/*.cpp
 )
 
 
@@ -40,6 +41,7 @@ add_executable(vision ${vision_src})
 target_include_directories(vision PUBLIC
     ${CMAKE_SOURCE_DIR}/include/vision
     ${CMAKE_SOURCE_DIR}/../../global/include/math
+    ${CMAKE_SOURCE_DIR}/../../global/include/kinematics
 )
 
 target_link_libraries(vision PUBLIC

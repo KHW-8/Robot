@@ -26,6 +26,7 @@ install(DIRECTORY
 file(GLOB_RECURSE kinematics_calculator_src
     ${CMAKE_SOURCE_DIR}/src/kinematics_calculator/*.cpp
     ${CMAKE_SOURCE_DIR}/../../global/src/math/*.cpp
+    ${CMAKE_SOURCE_DIR}/../../global/src/kinematics/*.cpp
 )
 
 add_executable(kinematics_calculator ${kinematics_calculator_src})
@@ -37,6 +38,7 @@ target_include_directories(kinematics_calculator PRIVATE
     ${CMAKE_SOURCE_DIR}/include/kinematics_calculator/kinematics
     ${CMAKE_SOURCE_DIR}/../../global/include/math
     ${CMAKE_SOURCE_DIR}/../../global/include/utility
+    ${CMAKE_SOURCE_DIR}/../../global/include/kinematics
 )
 
 target_link_libraries(kinematics_calculator PRIVATE

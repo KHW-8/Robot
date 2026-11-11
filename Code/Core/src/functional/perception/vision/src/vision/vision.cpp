@@ -3,6 +3,7 @@
 
 /* Core */
 #include "math.h"
+#include "kinematics.h"
 
 /* Eigen */
 #include <eigen3/Eigen/src/Core/Matrix.h>
