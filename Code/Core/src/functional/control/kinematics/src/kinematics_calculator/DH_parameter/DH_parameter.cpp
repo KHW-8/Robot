@@ -1,6 +1,7 @@
 #include "DH_parameter.h"
 
 #include <rclcpp/logger.hpp>
+#include <rclcpp/logging.hpp>
 
 DHParameter::DHParameter(SymEngine::RCP<const SymEngine::Basic> alpha, 
             SymEngine::RCP<const SymEngine::Basic> a,

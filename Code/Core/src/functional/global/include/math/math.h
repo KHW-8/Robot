@@ -3,13 +3,24 @@
 
 //////////* Headers *//////////
 
+/* Eigen*/
+#include <eigen3/Eigen/Dense>
+
 /* SymEngine */
 #include <symengine/basic.h>
 #include <symengine/matrix.h>
 
 ///////////////////////////////
 
+///////////* Macros *///////////
+#define EPSILON 1e-12
+
+////////////////////////////////
+
 //////////* Functions *//////////
+
+/* Compare */
+auto equals(double a, double b) -> bool;
 
 /* Converter */
 auto deg_to_rad(double degree) -> double;
@@ -20,7 +31,16 @@ auto pulse_to_deg(size_t pulse) -> double;
 
 auto pulse_to_rad(size_t pulse) -> double;
 
+auto to_equivalent_angle(double angle) -> double;
+
+/* Inverse */
+auto inverse_transformation_matrix(Eigen::Matrix4d T) -> Eigen::Matrix4d;
+
 /* Simplify */
+auto nsimplify(const double& num) -> double;
+auto nsimplify(Eigen::Vector3d& v) -> void;
+auto nsimplify(Eigen::Matrix4d& m) -> void;
+auto nsimplify(SymEngine::DenseMatrix& m) -> void;
 auto nsimplify(SymEngine::RCP<const SymEngine::Basic> element) -> std::pair<bool, SymEngine::RCP<const SymEngine::Basic> >;
 
 /* Matrix */

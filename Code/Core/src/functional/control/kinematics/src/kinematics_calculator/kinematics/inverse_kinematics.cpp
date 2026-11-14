@@ -5,11 +5,14 @@
 
 /* Core */
 #include "utility.hpp"
+#include "math.h"
 
 /* STD */
 #include <cmath>
 
 /* SymEngine */
+#include <cstddef>
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <symengine/basic.h>
 #include <symengine/integer.h>
 #include <symengine/matrices/transpose.h>
@@ -24,7 +27,6 @@
 
 extern double perpendicular_distance_between_link2_joint_z_axes;
 extern double perpendicular_distance_between_link3_joint_z_axes;
-extern double perpendicular_distance_between_link4_joint_x_axes;
 
 ////////////////////////////////////////
 
@@ -53,51 +55,60 @@ auto InverseKinematics::calculate(Eigen::Matrix4d T, std::map<uint8_t, std::pair
 
     /* The first two solution */
     // Θ1
-    const auto theta1 = rad_to_deg(std::atan2(r23, r13));
+    auto theta1 = rad_to_deg(std::atan2(r23, r13));
+    theta1 = to_equivalent_angle(theta1);
 
     // Θ5
-    const auto theta5 = rad_to_deg(std::atan2(r32, -r31));
-
-    // Θ2 + Θ3 + Θ4
+    auto theta5 = rad_to_deg(std::atan2(r32, -r31));
+    theta5 = to_equivalent_angle(theta5);
+    
+    // Θ2 + Θ3 + Θ4, -320 <= Θ_234 <= 320
+    const auto& s234 = r13*std::cos(deg_to_rad(theta1)) + r23*std::sin(deg_to_rad(theta1));
     const auto& c234 = r33;
-    const auto& s234 = r32 / std::sin(deg_to_rad(theta5));
-    const auto theta234 = rad_to_deg(std::atan2(s234, c234));
+    auto theta234 = rad_to_deg(std::atan2(s234, c234)); 
+    theta234 = theta234 < 0 ? theta234 + 360 : theta234;
 
     auto v = calculate_theta2_theta3_theta4(px, py, pz, theta1, theta234);
     for (auto& s : v) {
-        s.theta1 = theta1;
-        s.theta5 = theta5;
+        s.theta_value_map[1] = theta1;
+        s.theta_value_map[5] = theta5;
     }
 
     solutions.insert(solutions.end(), v.begin(), v.end());
 
     /* The last two solution */
-    v = calculate_theta2_theta3_theta4(px, py, pz, theta1 + 180, -theta234);
+    const auto& theta1_prime = to_equivalent_angle(theta1 + 180);
+    const auto& theta5_prime = to_equivalent_angle(theta5 + 180);
+    const auto& theta234_prime = -theta234 < 0 ? -theta234 + 360 : -theta234;
+
+    v = calculate_theta2_theta3_theta4(px, py, pz, theta1_prime, theta234_prime);
     for (auto& s : v) {
-        s.theta1 = theta1 + 180;
-        s.theta5 = theta5 + 180;
+        s.theta_value_map[1] = theta1_prime;
+        s.theta_value_map[5] = theta5_prime;
     }
 
     solutions.insert(solutions.end(), v.begin(), v.end());
+
+    filter_solutions(solutions, angle_interval_map);
 
     return solutions;
 }
 
 auto InverseKinematics::calculate(SymEngine::DenseMatrix T, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> std::vector<Solution> {
     /* Check whether all elements are number */
-    std::vector<double> v;
+    Eigen::Matrix4d m;
 
     for (size_t i = 0; i < T.nrows(); i++) {
         for (size_t j = 0; j < T.ncols(); j++) {
             if (!SymEngine::is_a_Number(*T.get(i, j))) 
                 return {};
             else
-                v.emplace_back( get_value(T.get(i, j)));
+                m(i, j) = get_value(T.get(i, j));
         }
     }
 
     return calculate(
-        Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(v.data()),
+        m,
         angle_interval_map
     );
 }
@@ -105,8 +116,8 @@ auto InverseKinematics::calculate(SymEngine::DenseMatrix T, std::map<uint8_t, st
 auto InverseKinematics::calculate_theta2_theta3_theta4(double px, double py, double pz,double theta1, double theta234) -> std::vector<Solution> {
     /* Θ3
      * (1)
-     * A a2*c2 + a3c23 = px*c1 - py*s1 - d5*s234
-     * B = a2*s2 + a3s23 = d5*c234 - pz
+     * A a2*c2 + a3c23 = px*c1 - py*s1
+     * B = a2*s2 + a3s23 = -pz
      *
      * (2)
      * A^2 + B^2 = a2^2 + a3^2 + 2a2*a3*(c2c23 + s2s23)
@@ -117,18 +128,20 @@ auto InverseKinematics::calculate_theta2_theta3_theta4(double px, double py, dou
      */
 
     // First solution
-    const auto A = px*std::cos(deg_to_rad(theta1)) + py*std::sin(deg_to_rad(theta1)) - perpendicular_distance_between_link4_joint_x_axes*std::sin(deg_to_rad((theta234))); 
-    const auto B = perpendicular_distance_between_link4_joint_x_axes*std::cos(deg_to_rad(theta234)) - pz; 
+    const auto A = px*std::cos(deg_to_rad(theta1)) + py*std::sin(deg_to_rad(theta1)); 
+    const auto B = -pz; 
     const auto c3 = (std::pow(A, 2) + std::pow(B, 2) - std::pow(perpendicular_distance_between_link2_joint_z_axes, 2) - std::pow(perpendicular_distance_between_link3_joint_z_axes, 2))/(2*perpendicular_distance_between_link2_joint_z_axes*perpendicular_distance_between_link3_joint_z_axes);
     const auto s3 = std::sqrt(1 - std::pow(c3, 2));
-    const auto theta3 = rad_to_deg(std::atan2(s3, c3));
+    auto theta3 = rad_to_deg(std::atan2(s3, c3));
+    theta3 = to_equivalent_angle(theta3);
+
     
     auto s1 = calculate_theta2_theta4(theta3, theta234, A, B);
-    s1.theta3 = theta3;
+    s1.theta_value_map[3] = theta3;
     
     // Second solution
     auto s2 = calculate_theta2_theta4(-theta3, theta234, A, B);
-    s2.theta3 = -theta3;
+    s2.theta_value_map[3] = -theta3;
 
     return { s1, s2 };
 }
@@ -140,15 +153,51 @@ auto InverseKinematics::calculate_theta2_theta4(double theta3, double theta234, 
      */
     const auto C = perpendicular_distance_between_link2_joint_z_axes + perpendicular_distance_between_link3_joint_z_axes*std::cos(deg_to_rad(theta3)); 
     const auto D = perpendicular_distance_between_link3_joint_z_axes*std::sin(deg_to_rad(theta3)); 
-    const auto theta2 = rad_to_deg(std::atan2(B, A) - std::atan2(D, C));
+    auto theta2 = rad_to_deg(std::atan2(B, A) - std::atan2(D, C));
+    theta2 = to_equivalent_angle(theta2);
+
     // Θ4
-    const auto theta4 = theta234 - theta2 - theta3;
+    auto theta4 = theta234 - theta2 - theta3;
+    theta4 = to_equivalent_angle(theta4);
+
 
     Solution s;
-    s.theta2 = theta2;
-    s.theta4 = theta4;
+    s.theta_value_map[2] = theta2;
+    s.theta_value_map[4] = theta4;
 
     return s;
 }
+
+auto InverseKinematics::filter_solutions(std::vector<Solution>& solutions, 
+                                         std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> void 
+{
+    std::vector<size_t> v;
+    size_t i = 0;
+
+    for (auto it = solutions.begin(); it != solutions.end(); it++, i++) {
+        for (auto& pair : it->theta_value_map) {
+            const auto& theta_id = pair.first;
+            const auto& theta = pair.second;
+
+            auto it2 = angle_interval_map.find(theta_id);
+            if (it2 == angle_interval_map.end()) {
+                v.emplace_back(i);
+                break;
+            }
+
+            const auto& left_boundary = it2->second.first;
+            const auto& right_boundary = it2->second.second;
+
+            if (theta < left_boundary || theta > right_boundary) {
+                v.emplace_back(i);
+                break;
+            }
+        }
+    }
+
+    for (auto it = v.rbegin(); it != v.rend(); it++)  
+        solutions.erase(solutions.begin() + *it);
+}
+
 
 ///////////////////////////////////////

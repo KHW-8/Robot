@@ -10,6 +10,7 @@
 #include <eigen3/Eigen/Dense>
 
 /* ROS */
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <rclcpp/client.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/publisher.hpp>
@@ -73,7 +74,7 @@ private:
     auto receive_camera_info_rgb(const sensor_msgs::msg::CameraInfo& msg) -> void;
 
     // Convert
-    auto pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> void;
+    auto pixels_to_world_coordinate(const Eigen::Vector2d& pos) -> Eigen::Vector3d;
 
     // Initialization
     auto initialize() -> void;

@@ -17,11 +17,7 @@
 ///////////////////////////////
 
 struct Solution {
-    double theta1;
-    double theta2;
-    double theta3;
-    double theta4;
-    double theta5;
+    std::map<uint8_t, double> theta_value_map;
 };
 
 class InverseKinematics {
@@ -32,6 +28,8 @@ public:
 private:
     static auto calculate_theta2_theta3_theta4(double px, double py, double pz, double theta1, double theta234) -> std::vector<Solution>;
     static auto calculate_theta2_theta4(double theta3, double theta234, double A, double B) -> Solution;
+
+    static auto filter_solutions(std::vector<Solution>& solutions, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> void;
 };
 
 #endif
