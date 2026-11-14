@@ -7,9 +7,10 @@ endif()
 
 ## Find dependencies ##
 # Core
-find_package(board_msg REQUIRED)
-find_package(peripheral_msg REQUIRED)
+find_package(board_msgs REQUIRED)
 find_package(gui_msgs REQUIRED)
+find_package(kinematics_msgs REQUIRED)
+find_package(peripheral_msgs REQUIRED)
 # ROS2
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -38,8 +39,9 @@ target_include_directories(robot_controller PRIVATE
 
 target_link_libraries(robot_controller PRIVATE
     # Core
-    board_msg::board_msg
-    peripheral_msg::peripheral_msg
+    board_msgs::board_msgs
+    peripheral_msgs::peripheral_msgs
+    kinematics_msgs::kinematics_msgs
     gui_msgs::gui_msgs
     # ROS
     rclcpp::rclcpp

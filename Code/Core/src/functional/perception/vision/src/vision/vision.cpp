@@ -184,8 +184,6 @@ auto Vision::initialize() -> void {
         std::bind(&Vision::receive_camera_info_rgb, this, std::placeholders::_1)
     );
 
-    this->pub_kinematics_calculator = this->create_publisher<kinematics_msgs::msg::Transformation>("~/extrinsic_parameters", 1);
-
     // Load config
     this->color = load_config(std::filesystem::current_path().string() + "/src/functional/perception/vision/config/color.yaml");
     this->extrinsic = load_config(std::filesystem::current_path().string() + "/src/functional/perception/vision/config/extrinsic.yaml");

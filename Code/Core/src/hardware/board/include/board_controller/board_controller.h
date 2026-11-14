@@ -9,7 +9,7 @@
 #include <rclcpp/node.hpp>
 #include <std_srvs/srv/trigger.hpp>
 // Board BoardController Message
-#include "board_msg/msg/packet.hpp"
+#include "board_msgs/msg/packet.hpp"
 
 ///////////////////////////////
 
@@ -31,7 +31,7 @@ private:
     // Transmit / Receive
     auto transmit(const std::vector<uint8_t>& vector_data) -> void;
     auto receive() -> void;
-    auto receive_packet(const board_msg::msg::Packet& msg) -> void;
+    auto receive_packet(const board_msgs::msg::Packet& msg) -> void;
 
     // Callback
     auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
@@ -42,9 +42,9 @@ private:
 
 private:
     // Subscription
-    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_bus_servo;
-    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_buzzer;
-    rclcpp::Subscription<board_msg::msg::Packet>::SharedPtr sub_led;
+    rclcpp::Subscription<board_msgs::msg::Packet>::SharedPtr sub_bus_servo;
+    rclcpp::Subscription<board_msgs::msg::Packet>::SharedPtr sub_buzzer;
+    rclcpp::Subscription<board_msgs::msg::Packet>::SharedPtr sub_led;
 
 
     // Service

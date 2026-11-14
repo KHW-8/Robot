@@ -7,8 +7,8 @@ endif()
 
 ## Find dependencies ##
 # Core
-find_package(peripheral_msg REQUIRED)
-find_package(board_msg REQUIRED)
+find_package(peripheral_msgs REQUIRED)
+find_package(board_msgs REQUIRED)
 # OpenCV
 find_package(OpenCV REQUIRED COMPONENTS core)
 # ROS
@@ -36,8 +36,8 @@ target_include_directories(bus_servo PUBLIC
 
 target_link_libraries(bus_servo PUBLIC
     # Core
-    peripheral_msg::peripheral_msg
-    board_msg::board_msg
+    peripheral_msgs::peripheral_msgs
+    board_msgs::board_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
@@ -54,8 +54,8 @@ target_include_directories(buzzer PUBLIC
 
 target_link_libraries(buzzer PUBLIC
     # Core
-    peripheral_msg::peripheral_msg
-    board_msg::board_msg
+    peripheral_msgs::peripheral_msgs
+    board_msgs::board_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
@@ -72,7 +72,7 @@ target_include_directories(camera PUBLIC
 
 target_link_libraries(camera PUBLIC
     # Core
-    peripheral_msg::peripheral_msg
+    peripheral_msgs::peripheral_msgs
     # Deptrum
     ${CMAKE_SOURCE_DIR}/../../3rdparty/sdk/depth_camera/deptrum/aurora900/lib/libdeptrum_stream_aurora900.so.1.1.19
     # OpenCV
@@ -99,8 +99,8 @@ target_include_directories(led PUBLIC
 
 target_link_libraries(led PUBLIC
     # Core
-    peripheral_msg::peripheral_msg
-    board_msg::board_msg
+    peripheral_msgs::peripheral_msgs
+    board_msgs::board_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs

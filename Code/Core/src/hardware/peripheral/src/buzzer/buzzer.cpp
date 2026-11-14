@@ -7,8 +7,8 @@
 #include <rclcpp/executors.hpp>
 
 /* Core */
-#include "board_msg/msg/packet.hpp"
-#include "peripheral_msg/msg/buzzer_request.hpp"
+#include "board_msgs/msg/packet.hpp"
+#include "peripheral_msgs/msg/buzzer_request.hpp"
 #include "utility.hpp"
 #include "peripheral.h"
 
@@ -18,7 +18,7 @@ Buzzer::Buzzer()
     initialize();
 }
 
-auto Buzzer::set(const peripheral_msg::msg::BuzzerRequest& request) -> void {
+auto Buzzer::set(const peripheral_msgs::msg::BuzzerRequest& request) -> void {
      // Print request info
     RCLCPP_INFO(
         rclcpp::get_logger(""), 
@@ -36,7 +36,7 @@ auto Buzzer::set(const peripheral_msg::msg::BuzzerRequest& request) -> void {
     const auto& repeat_count = to_byte_vector<decltype(request.repeat_count)>(request.repeat_count);
 
     // Create a board RobotController packet
-    auto packet = board_msg::msg::Packet();
+    auto packet = board_msgs::msg::Packet();
 
     // Peripheral ID
     packet.peripheral_id = static_cast<uint8_t>(Peripheral::BUZZER);
@@ -60,14 +60,14 @@ auto Buzzer::initialization_complete([[maybe_unused]]const std::shared_ptr<std_s
 
 auto Buzzer::initialize() -> void {
     // Waiting for robot controller node to start
-    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
-    this->cli_board_controller->wait_for_service();
+    this->cli_board_controller_ready = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
+    this->cli_board_controller_ready->wait_for_service();
 
     // Create a publisher of board controller
-    this->pub_board_controller = this->create_publisher<board_msg::msg::Packet>("~/packet", 1);
+    this->pub_board_controller = this->create_publisher<board_msgs::msg::Packet>("~/packet", 1);
 
     // Create a subscription of robot controller
-    this->sub_robot_controller = this->create_subscription<peripheral_msg::msg::BuzzerRequest>(
+    this->sub_robot_controller = this->create_subscription<peripheral_msgs::msg::BuzzerRequest>(
         "~", 
         10, 
         std::bind(&Buzzer::set, this, std::placeholders::_1)

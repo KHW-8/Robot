@@ -32,8 +32,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        peripheral,
+        # peripheral,
         kinematics_calculator,
-        vision,
+        # vision,
         robot_controller
     ])

@@ -10,7 +10,7 @@ endif()
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
 # Core
-find_package(board_msg REQUIRED)
+find_package(board_msgs REQUIRED)
 # ROS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -41,7 +41,7 @@ target_link_libraries(board_controller PUBLIC
     # Boost
     Boost::filesystem
     # Core
-    board_msg::board_msg
+    board_msgs::board_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs

@@ -128,7 +128,7 @@ auto BoardController::receive() -> void {
 }
 
 
-auto BoardController::receive_packet(const board_msg::msg::Packet& msg) -> void {
+auto BoardController::receive_packet(const board_msgs::msg::Packet& msg) -> void {
     // Initialize a vector with header
     std::vector<uint8_t> vec{ 0x55, 0x55 }; 
     // Peripheral ID
@@ -162,19 +162,19 @@ auto BoardController::initialize() -> void {
     }
 
     // Create subscription of packet
-    this->sub_bus_servo = this->create_subscription<board_msg::msg::Packet>(
+    this->sub_bus_servo = this->create_subscription<board_msgs::msg::Packet>(
         "/bus_servo/packet",
         10,
         std::bind(&BoardController::receive_packet, this, std::placeholders::_1)
     );
 
-    this->sub_buzzer = this->create_subscription<board_msg::msg::Packet>(
+    this->sub_buzzer = this->create_subscription<board_msgs::msg::Packet>(
         "/buzzer/packet",
         10,
         std::bind(&BoardController::receive_packet, this, std::placeholders::_1)
     );
 
-    this->sub_led = this->create_subscription<board_msg::msg::Packet>(
+    this->sub_led = this->create_subscription<board_msgs::msg::Packet>(
         "/led/packet",
         10,
         std::bind(&BoardController::receive_packet, this, std::placeholders::_1)

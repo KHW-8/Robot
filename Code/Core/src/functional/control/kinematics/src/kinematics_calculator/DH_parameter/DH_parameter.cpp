@@ -16,9 +16,4 @@ DHParameter::DHParameter(SymEngine::RCP<const SymEngine::Basic> alpha,
 
 
 auto DHParameter::print() -> void {
-    std::cout << "α: " << *this->alpha << std::endl;
-    std::cout << "a: " << *this->a << std::endl;
-    std::cout << "d: " << *this->d << std::endl;
-    std::cout << "Θ: " << *this->theta << std::endl;
-    std::cout << std::endl;
 }

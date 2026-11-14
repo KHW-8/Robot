@@ -34,14 +34,14 @@ BusServo::BusServo()
 
 void BusServo::initialize() {
     // Waiting for board controller node to start
-    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
-    this->cli_board_controller->wait_for_service();
+    this->cli_board_controller_ready = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
+    this->cli_board_controller_ready->wait_for_service();
 
     // Create a publisher of board controller
-    this->pub_board_controller = this->create_publisher<board_msg::msg::Packet>("~/packet", 10);
+    this->pub_board_controller = this->create_publisher<board_msgs::msg::Packet>("~/packet", 10);
 
     // Create a subscription of robot controller
-    this->sub_robot_controller = this->create_subscription<peripheral_msg::msg::BusServoRequest>(
+    this->sub_robot_controller = this->create_subscription<peripheral_msgs::msg::BusServoRequest>(
         "~", 
         10, 
         std::bind(&BusServo::set_pos, this, std::placeholders::_1)
@@ -54,7 +54,7 @@ void BusServo::initialize() {
     );
 }
 
-auto BusServo::set_pos(const peripheral_msg::msg::BusServoRequest::UniquePtr& request) -> void {
+auto BusServo::set_pos(const peripheral_msgs::msg::BusServoRequest::UniquePtr& request) -> void {
     // Print request info 
     for (const auto& servo : request->servos) {
         RCLCPP_INFO(
@@ -67,7 +67,7 @@ auto BusServo::set_pos(const peripheral_msg::msg::BusServoRequest::UniquePtr& re
     }
 
     // Create a board RobotController packet
-    auto packet = board_msg::msg::Packet();
+    auto packet = board_msgs::msg::Packet();
 
     // Peripheral ID
     packet.peripheral_id = static_cast<uint8_t>(Peripheral::BUS_SERVO);

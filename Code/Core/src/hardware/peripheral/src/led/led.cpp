@@ -3,8 +3,8 @@
 
 /* Core */
 #include "utility.hpp"
-#include "peripheral_msg/msg/led.hpp"
-#include "board_msg/msg/packet.hpp"
+#include "peripheral_msgs/msg/led.hpp"
+#include "board_msgs/msg/packet.hpp"
 #include "peripheral.h"
 
 /* ROS */
@@ -22,9 +22,9 @@ LED::LED()
     initialize();
 }
 
-auto LED::set(const peripheral_msg::msg::LEDRequest& request) -> void {
+auto LED::set(const peripheral_msgs::msg::LEDRequest& request) -> void {
     // Create a board RobotController packet
-    auto packet = board_msg::msg::Packet();
+    auto packet = board_msgs::msg::Packet();
 
     // Peripheral ID
     packet.peripheral_id = static_cast<uint8_t>(Peripheral::LED);
@@ -57,14 +57,14 @@ auto LED::set(const peripheral_msg::msg::LEDRequest& request) -> void {
 
 auto LED::initialize() -> void {
     // Waiting for robot controller node to start
-    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
-    this->cli_board_controller->wait_for_service();
+    this->cli_board_controller_ready = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
+    this->cli_board_controller_ready->wait_for_service();
 
     // Create a publisher of board controller
-    this->pub_board_controller = this->create_publisher<board_msg::msg::Packet>("~/packet", 10);
+    this->pub_board_controller = this->create_publisher<board_msgs::msg::Packet>("~/packet", 10);
 
     // Create a subscription of robot controller
-    this->sub_robot_controller = this->create_subscription<peripheral_msg::msg::LEDRequest>(
+    this->sub_robot_controller = this->create_subscription<peripheral_msgs::msg::LEDRequest>(
         "~",
         10, 
         std::bind(&LED::set, this, std::placeholders::_1)

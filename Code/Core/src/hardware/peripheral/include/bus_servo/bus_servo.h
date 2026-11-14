@@ -9,8 +9,8 @@
 #include <std_srvs/srv/trigger.hpp>
 /* Core */
 //// Message
-#include "board_msg/msg/packet.hpp"
-#include "peripheral_msg/msg/bus_servo_request.hpp"
+#include "board_msgs/msg/packet.hpp"
+#include "peripheral_msgs/msg/bus_servo_request.hpp"
 
 /////////////////////////////////////////
 
@@ -79,7 +79,7 @@ public:
     BusServo();
     
 public:
-    auto set_pos(const peripheral_msg::msg::BusServoRequest::UniquePtr& request) -> void;
+    auto set_pos(const peripheral_msgs::msg::BusServoRequest::UniquePtr& request) -> void;
 
 private:
     // Callback
@@ -90,13 +90,13 @@ private:
 
 private:
     // Client
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_board_controller;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_board_controller_ready;
 
     // Publisher
-    rclcpp::Publisher<board_msg::msg::Packet>::SharedPtr pub_board_controller;
+    rclcpp::Publisher<board_msgs::msg::Packet>::SharedPtr pub_board_controller;
 
     // Subscription
-    rclcpp::Subscription<peripheral_msg::msg::BusServoRequest>::SharedPtr sub_robot_controller;
+    rclcpp::Subscription<peripheral_msgs::msg::BusServoRequest>::SharedPtr sub_robot_controller;
 
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
