@@ -1,0 +1,21 @@
+## Include ##
+# File
+.mxproject
+CMakePresets.json
+*.ld
+*.s
+
+# Folder
+build
+cmake
+Core/Inc
+Core/Src/*
+Drivers
+mxproject
+mx.scratch
+.vscode
+.settings
+
+## Exclude ##
+# File
+!Core/Src/main.c

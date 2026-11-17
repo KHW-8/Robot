@@ -2,13 +2,10 @@
 
 //////////* Header *//////////
 
-/* STD */
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
 /* Arm */
 // Core
 #include "bus_servo_task.h"
+#include "buzzer.h"
 #include "global.h"
 #include "main.h"
 #include "usart.h"
@@ -17,6 +14,16 @@
 #include "response_type.h"
 // Misc
 #include "check_sum.h"
+
+/* STM32 */
+#include "stm32l4xx_hal_gpio.h"
+#include "stm32l4xx_hal.h"
+
+/* STD */
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
 
 ///////////////////////////////
 
@@ -53,9 +60,10 @@ static UART_HandleTypeDef *huart_bus_servo = &huart1;
  * @brief Initialize bus servo packet
  */
 void initialize_bus_servo_packet(BusServoPacket *packet,
-                                    uint8_t servo_id, 
-                                    uint8_t data_length,
-                                    uint8_t cmd) {
+                                uint8_t servo_id, 
+                                uint8_t data_length,
+                                uint8_t cmd) 
+{
     packet->header1 = PACKET_HEADER;
     packet->header2 = PACKET_HEADER;
     packet->servo_id = servo_id;
@@ -73,7 +81,7 @@ void initialize_bus_servo_packet(BusServoPacket *packet,
  */
 Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
     // Set to write mode (reset bus servo pin)
-    HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_RESET);
+    set_mode(BUS_SERVO_WRITE_MODE);
 
     // Transmit packet
     uint8_t  packet_length = PACKET_HEADER_COUNT + packet->data_length + 1;
@@ -85,7 +93,7 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
         uint32_t initial_tick = HAL_GetTick();
         while (!__HAL_UART_GET_FLAG(huart_bus_servo, UART_FLAG_TXE)) {
             if (HAL_GetTick() - initial_tick > 10) {
-                HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+                set_mode(BUS_SERVO_READ_MODE);
                 return ERR;
             }   
         }
@@ -101,13 +109,13 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
     uint32_t initial_tick = HAL_GetTick();
     while (!__HAL_UART_GET_FLAG(huart_bus_servo, UART_FLAG_TC)) {
         if (HAL_GetTick() - initial_tick > 10) {
-            HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+            set_mode(BUS_SERVO_READ_MODE);
             return ERR;
         }   
     }
 
     // Set to read mode (set bus servo pin)
-    HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+    set_mode(BUS_SERVO_READ_MODE);
 
     if (!tx_only)
         receive_packet_from_bus_servo();
@@ -116,6 +124,10 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
 }
 
 Res receive_packet_from_bus_servo() {
+    initialize_bus_servo_packet(&packet_controller.rx_packet, 0, 0, 0);
+    packet_controller.rx_packet.header1 = 0;
+    packet_controller.rx_packet.header2 = 0;
+
     packet_controller.rx_state = RECEIVING_HEADER1;
     packet_controller.rx_finished = false;                     
     packet_controller.param_index = 0;
@@ -131,6 +143,8 @@ Res receive_packet_from_bus_servo() {
 
     HAL_UART_AbortReceive_IT(huart_bus_servo);
 
+    transmit_msg_to_core("Received packet from bus servo.");
+
     return packet_controller.rx_finished == true ? OK : ERR;
 }
 
@@ -142,7 +156,15 @@ void initialize_bus_servo() {
     packet_controller.time_out = 100;
 
     // Set to read mode (set bus servo pin)
-    HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+    set_mode(BUS_SERVO_READ_MODE);
+}
+
+void set_mode(BusServoMode mode) {
+    switch (mode) {
+    case BUS_SERVO_READ_MODE: HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_RESET); break;
+    case BUS_SERVO_WRITE_MODE: HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET); break;
+    default: break;
+    }
 }
 
 Res add_bus_servo_task(BusServoTask task) {
@@ -183,6 +205,8 @@ void execute_bus_servo_task() {
             );
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
+       
+            HAL_Delay(10);
         }
     } break;
     case READ_BUS_SERVO_ANGLE: {
@@ -199,9 +223,18 @@ void execute_bus_servo_task() {
             if (read_bus_servo_angle(current_task.servos[i].servo_id, &angle) == OK) {
                 response->servos[i].servo_id = current_task.servos[i].servo_id;
                 response->servos[i].angle = angle;
+
+                char buf[256];
+                sprintf(buf, "Angle: %d, State: %d", 
+                    angle,
+                    HAL_GPIO_ReadPin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin)
+                );
+                transmit_msg_to_core(buf);
             }
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
+
+            HAL_Delay(10);
         }
 
         // Set core packet length
@@ -263,7 +296,7 @@ Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duratio
     packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
-    uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
+    uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, true);
     if (ret != OK)
         return ERR;
 

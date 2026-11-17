@@ -22,11 +22,11 @@ static uint32_t last_tick = 0;
 
 void test_buzzer(void) {
     // Beep
-    HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET);
+    turn_buzzer_on();
     HAL_Delay(1000);
 
     //  Mute
-    HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
+    turn_buzzer_off();
     HAL_Delay(1000);
 }
 
@@ -120,11 +120,11 @@ void execute_buzzer_task() {
 }
 
 void turn_buzzer_on() {
-    HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET);
 }
 
 void turn_buzzer_off() {
-    HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
 }
 
 /////////////////////////////////////////////////////
