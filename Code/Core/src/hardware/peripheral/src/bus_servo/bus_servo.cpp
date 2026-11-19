@@ -44,7 +44,7 @@ void BusServo::initialize() {
     this->sub_robot_controller = this->create_subscription<peripheral_msgs::msg::BusServoRequest>(
         "~", 
         10, 
-        std::bind(&BusServo::set_pos, this, std::placeholders::_1)
+        std::bind(&BusServo::handle_request, this, std::placeholders::_1)
     );
 
     // Complete initialization and notify all other nodes
@@ -54,9 +54,45 @@ void BusServo::initialize() {
     );
 }
 
-auto BusServo::set_pos(const peripheral_msgs::msg::BusServoRequest::UniquePtr& request) -> void {
+auto BusServo::handle_request(const peripheral_msgs::msg::BusServoRequest& request) -> void {
+    switch (static_cast<BusServoCMD>(request.cmd)) {
+    case BusServoCMD::SET_ROTAION_ANGLE_AND_DURATION: set_pos(request); break;
+    case BusServoCMD::READ_ANGLE: read_pos(request); break;
+    default: break;
+    }
+}
+
+
+auto BusServo::read_pos(const peripheral_msgs::msg::BusServoRequest& request) -> void {
     // Print request info 
-    for (const auto& servo : request->servos) {
+    for (const auto& servo : request.servos) {
+        RCLCPP_INFO(
+            rclcpp::get_logger(""), 
+            "Servo Id: %d", 
+            servo.id
+        );
+    }
+
+     // Create a board controller packet
+    auto packet = board_msgs::msg::Packet();
+
+    // Peripheral ID
+    packet.peripheral_id = static_cast<uint8_t>(Peripheral::BUS_SERVO);
+    // Command
+    packet.array_data.emplace_back(request.cmd);
+    // Bus servo count
+    packet.array_data.emplace_back(request.servos.size());
+    // Bus servo information
+     for (const auto& servo : request.servos) 
+        // Servo ID
+        packet.array_data.emplace_back(servo.id);
+
+    this->pub_board_controller->publish(packet);
+}
+
+auto BusServo::set_pos(const peripheral_msgs::msg::BusServoRequest& request) -> void {
+    // Print request info 
+    for (const auto& servo : request.servos) {
         RCLCPP_INFO(
             rclcpp::get_logger(""), 
             "Servo Id: %d, angle: %d°, Duration: %.2fs", 
@@ -66,32 +102,26 @@ auto BusServo::set_pos(const peripheral_msgs::msg::BusServoRequest::UniquePtr& r
         );
     }
 
-    // Create a board RobotController packet
+    // Create a board controller packet
     auto packet = board_msgs::msg::Packet();
 
     // Peripheral ID
     packet.peripheral_id = static_cast<uint8_t>(Peripheral::BUS_SERVO);
     // Command
-    packet.array_data.emplace_back(request->cmd);
+    packet.array_data.emplace_back(request.cmd);
     // Bus servo count
-    packet.array_data.emplace_back(request->servos.size());
+    packet.array_data.emplace_back(request.servos.size());
     // Bus servo information
-    if (request->query_only) {
-        for (const auto& servo : request->servos) 
-            // Servo ID
-            packet.array_data.emplace_back(servo.id);
-    } else {
-        for (const auto& servo : request->servos) {
-            const auto& duration = to_byte_vector<decltype(servo.duration)>(servo.duration); // Convert second to millisecond
-            
-            // Servo ID
-            packet.array_data.emplace_back(servo.id);
-            // Angle
-            packet.array_data.emplace_back(servo.angle); 
-            // Duration
-            packet.array_data.insert(packet.array_data.end(), duration.begin(), duration.end()); 
+    for (const auto& servo : request.servos) {
+        const auto& duration = to_byte_vector<decltype(servo.duration)>(servo.duration); // Convert second to millisecond
+        
+        // Servo ID
+        packet.array_data.emplace_back(servo.id);
+        // Angle
+        packet.array_data.emplace_back(servo.angle); 
+        // Duration
+        packet.array_data.insert(packet.array_data.end(), duration.begin(), duration.end()); 
 
-        }
     }
 
     this->pub_board_controller->publish(packet);

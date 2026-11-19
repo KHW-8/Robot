@@ -9,6 +9,7 @@
 //// Functional
 #include "kinematics_msgs/srv/pose.hpp"
 //// Hardware
+#include "peripheral_msgs/msg/bus_servo.hpp"
 #include "peripheral_msgs/msg/buzzer_request.hpp"
 #include "peripheral_msgs/msg/led_request.hpp"
 #include "peripheral_msgs/msg/bus_servo_request.hpp"
@@ -30,10 +31,10 @@ public:
 public:
     //
     void read_servo_pos(const std::vector<decltype(peripheral_msgs::msg::BusServo::id)>& ids);
-
     auto set_servo_pos(const decltype(peripheral_msgs::msg::BusServo::id)& id, 
-                const decltype(peripheral_msgs::msg::BusServo::angle)& angle, 
-                const decltype(peripheral_msgs::msg::BusServo::duration)& duration) -> void;
+                       const decltype(peripheral_msgs::msg::BusServo::angle)& angle, 
+                       const decltype(peripheral_msgs::msg::BusServo::duration)& duration) -> void;
+    auto set_servo_pos(std::vector<peripheral_msgs::msg::BusServo> servos_pos) -> void;
 
     auto set_buzzer(decltype(peripheral_msgs::msg::BuzzerRequest::frequency) freq, 
                 decltype(peripheral_msgs::msg::BuzzerRequest::on_duration) on_duration, 

@@ -73,9 +73,9 @@ auto KinematicsCalculator::receive_pose(std::shared_ptr<kinematics_msgs::srv::Po
         return;
     }
 
-    for (const auto& pair : solutions.begin()->theta_value_map) {
-        const auto& theta_id = pair.first;
-        const auto& theta = pair.second;
+    for (auto it = solutions.begin()->theta_value_map.rbegin(); it != solutions.begin()->theta_value_map.rend(); it++) {
+        const auto& theta_id = it->first;
+        const auto& theta = it->second;
 
         auto res = theta_to_servo_angle(theta_id, theta);
         response->servo_angles.emplace_back(res.first ? res.second : 0);

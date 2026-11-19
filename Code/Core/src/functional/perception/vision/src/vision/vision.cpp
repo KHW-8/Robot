@@ -21,11 +21,9 @@
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
-#include "kinematics_msgs/msg/transformation.hpp"
 #include "sensor_msgs/msg/camera_info.hpp"
 #include "std_msgs/msg/header.hpp"
 #include "std_srvs/srv/trigger.hpp"
-#include <sensor_msgs/image_encodings.hpp>
 
 /* YAML-CPP */
 #include <yaml-cpp/node/node.h>

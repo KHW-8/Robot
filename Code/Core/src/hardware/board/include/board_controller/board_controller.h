@@ -6,12 +6,20 @@
 // Boost
 #include <boost/asio/serial_port.hpp>
 // ROS2
+#include <cstdint>
 #include <rclcpp/node.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <vector>
 // Board BoardController Message
 #include "board_msgs/msg/packet.hpp"
 
 ///////////////////////////////
+
+///////////* Macros *///////////
+
+#define PACKET_HEADER 0x55
+
+////////////////////////////////
 
 //////////* Classes *//////////
 
@@ -24,21 +32,28 @@ private:
     // Connection
     auto connect(const std::string& port) -> bool;
     auto close() -> void;
+    
+    // Callback
+    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
 
-    // checksum
+    // Check
+    auto check_packet(const std::vector<uint8_t>& packet) -> std::pair<bool, bool>; // <isReceiving, haveError>
+
+    // Checksum
     auto generate_checksum(const std::vector<uint8_t>& vector) -> uint8_t;
+
+    // Initialization
+    auto initialize() -> void;
+
+    // Handle
+    auto handle_packet(const std::vector<uint8_t>& packet) -> void;
 
     // Transmit / Receive
     auto transmit(const std::vector<uint8_t>& vector_data) -> void;
     auto receive() -> void;
     auto receive_packet(const board_msgs::msg::Packet& msg) -> void;
-
-    // Callback
-    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
-
-    // Initialization
-    auto initialize() -> void;
-
+    auto receive_packet_from_board() -> void;
+    auto receive_msg_from_board() -> void;
 
 private:
     // Subscription

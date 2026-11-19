@@ -8,19 +8,20 @@
 #include "bus_servo.h"
 #include "gui_msgs/msg/command.hpp"
 #include "kinematics_msgs/srv/pose.hpp"
+#include "peripheral_msgs/msg/bus_servo.hpp"
 
 /* ROS2 */
-#include <memory>
+#include <ostream>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/future_return_code.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
 /* STD */
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <functional>
-#include <map>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -32,7 +33,6 @@ RobotController::RobotController()
     :Node("robot_controller")
 {
     initialize();
-    test();
 }
 
 auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msgs::msg::BusServo::id)>& ids) -> void {
@@ -56,21 +56,26 @@ auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msgs:
         RCLCPP_INFO(rclcpp::get_logger(""), "Servo Id: %d", servo.id);
 }
 
-
 auto RobotController::set_servo_pos(const decltype(peripheral_msgs::msg::BusServo::id)& id, 
-                                    const decltype(peripheral_msgs::msg::BusServo::angle)& angle, 
-                                    const decltype(peripheral_msgs::msg::BusServo::duration)& duration) -> void
+                       const decltype(peripheral_msgs::msg::BusServo::angle)& angle, 
+                       const decltype(peripheral_msgs::msg::BusServo::duration)& duration) -> void 
 {
-    // Generate servo message
     auto servo = peripheral_msgs::msg::BusServo();
     servo.id = id;
     servo.angle = angle;
     servo.duration = duration;
 
+    set_servo_pos({servo});
+}
+
+
+auto RobotController::set_servo_pos(std::vector<peripheral_msgs::msg::BusServo> servos_pos) -> void
+{
+    // Generate servo message
     auto request = peripheral_msgs::msg::BusServoRequest();
     request.cmd = static_cast<uint8_t>(BusServoCMD::SET_ROTAION_ANGLE_AND_DURATION);
     request.query_only = false;
-    request.servos.emplace_back(servo);
+    request.servos = servos_pos;
 
     // Send message
     this->pub_servo->publish(request);
@@ -157,10 +162,9 @@ auto RobotController::test() -> void {
         return;
     }
 
-    RCLCPP_INFO(rclcpp::get_logger(""), "Get the result.");
-
+    uint8_t i = 2;
     for (const auto& e : res->servo_angles) 
-        RCLCPP_INFO(rclcpp::get_logger(""), "Angle: %f", e);
+        RCLCPP_INFO(rclcpp::get_logger(""), "Servo %d Angle: %f", i++, e);
 }
 
 
@@ -177,13 +181,13 @@ auto RobotController::initialization_complete([[maybe_unused]]const std::shared_
 
 auto RobotController::initialize() -> void {
     // Hardware
-    // initialize_board_controller();
-    // initialize_buzzer();
-    // initialize_led();
-    // initialize_servos();
+    initialize_board_controller();
+    initialize_buzzer();
+    initialize_led();
+    initialize_servos();
     // Functional
     initialize_kinematics_calculator();
-    // initialize_vision();
+    initialize_vision();
     // Application
     initialize_control_panel();
 
@@ -229,20 +233,22 @@ auto RobotController::initialize_servos() -> void {
     // Create a publisher for servo 
     this->pub_servo = this->create_publisher<peripheral_msgs::msg::BusServoRequest>("/bus_servo", 10);
 
-    // Set servos' angle
-    std::map<uint8_t, uint8_t> map = {
-        {1, 0},
-        {2, 120},
-        {3, 30},
-        {4, 195},
-        {5, 140},
-        {6, 120},
+    // Set servos' positions
+    std::vector<peripheral_msgs::msg::BusServo> servos_positions = {
+        peripheral_msgs::msg::BusServo{}.set__id(1).set__angle(0).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(2).set__angle(120).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(3).set__angle(30).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(4).set__angle(195).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(5).set__angle(140).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(6).set__angle(120).set__duration(1),
     };
 
-    for (auto pair : map) {
-        set_servo_pos(pair.first, pair.second, 1);
+    for (auto servo : servos_positions) {
+        set_servo_pos(servo.id, servo.angle, servo.duration);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+
+    // set_servo_pos(servos_positions);
 }
 
 auto RobotController::initialize_kinematics_calculator() -> void {
@@ -256,8 +262,8 @@ auto RobotController::initialize_kinematics_calculator() -> void {
 
 auto RobotController::initialize_vision() -> void {
     // Wait for vision
-    this->cli_vision_ready = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
-    this->cli_vision_ready->wait_for_service();
+    // this->cli_vision_ready = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
+    // this->cli_vision_ready->wait_for_service();
 }
 
 auto RobotController::initialize_control_panel() -> void {

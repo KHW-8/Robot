@@ -79,11 +79,15 @@ public:
     BusServo();
     
 public:
-    auto set_pos(const peripheral_msgs::msg::BusServoRequest::UniquePtr& request) -> void;
+    auto read_pos(const peripheral_msgs::msg::BusServoRequest& request) -> void;
+    auto set_pos(const peripheral_msgs::msg::BusServoRequest& request) -> void;
 
 private:
     // Callback
     auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
+
+    // Handle
+    auto handle_request(const peripheral_msgs::msg::BusServoRequest& request) -> void;
 
     // Initialization
     void initialize();
