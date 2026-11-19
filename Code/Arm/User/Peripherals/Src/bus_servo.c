@@ -5,7 +5,6 @@
 /* Arm */
 // Core
 #include "bus_servo_task.h"
-#include "buzzer.h"
 #include "global.h"
 #include "main.h"
 #include "usart.h"
@@ -21,9 +20,7 @@
 
 /* STD */
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
-
 
 ///////////////////////////////
 
@@ -223,13 +220,6 @@ void execute_bus_servo_task() {
             if (read_bus_servo_angle(current_task.servos[i].servo_id, &angle) == OK) {
                 response->servos[i].servo_id = current_task.servos[i].servo_id;
                 response->servos[i].angle = angle;
-
-                char buf[256];
-                sprintf(buf, "Angle: %d, State: %d", 
-                    angle,
-                    HAL_GPIO_ReadPin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin)
-                );
-                transmit_msg_to_core(buf);
             }
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
@@ -273,7 +263,8 @@ Res read_bus_servo_angle(uint8_t id, uint8_t *angle) {
     if (ret != OK)
         return ERR;
 
-    *angle = (uint8_t)(*(uint16_t*)packet_controller.rx_packet.params) * 240 / 1000;
+    uint16_t pulse = packet_controller.rx_packet.params[1] << 8 | packet_controller.rx_packet.params[0];
+    *angle = pulse * 240/1000;
 
     return OK;
 }

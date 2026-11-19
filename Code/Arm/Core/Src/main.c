@@ -27,7 +27,6 @@
 
 //////////* Headers *//////////
 /* STD */
-#include <stdio.h>
 
 /* Arm */
 //// User
