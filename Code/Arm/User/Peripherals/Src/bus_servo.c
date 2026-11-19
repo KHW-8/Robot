@@ -20,6 +20,7 @@
 
 /* STD */
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 ///////////////////////////////
@@ -77,11 +78,14 @@ void initialize_bus_servo_packet(BusServoPacket *packet,
  * @retval
  */
 Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
+    // Generate checksum
+    packet->chksum = generate_check_sum((uint8_t*)packet, packet->data_length, PACKET_HEADER_COUNT);
+
     // Set to write mode (reset bus servo pin)
     set_mode(BUS_SERVO_WRITE_MODE);
 
     // Transmit packet
-    uint8_t  packet_length = PACKET_HEADER_COUNT + packet->data_length + 1;
+    uint8_t  packet_length = PACKET_HEADER_COUNT + packet->data_length + 1; // Header count + Data length + Checksum(1)
 
     uint8_t *pPacket = (uint8_t*)packet;
     
@@ -96,9 +100,9 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
         }
         
         if (i == packet_length - 1) 
-            huart_bus_servo->Instance->TDR = (packet->chksum & 0xFF);
+            huart_bus_servo->Instance->TDR = packet->chksum;
         else 
-            huart_bus_servo->Instance->TDR = (pPacket[i] & 0xFF);
+            huart_bus_servo->Instance->TDR = pPacket[i];
     }
 
 
@@ -139,8 +143,6 @@ Res receive_packet_from_bus_servo() {
     }
 
     HAL_UART_AbortReceive_IT(huart_bus_servo);
-
-    transmit_msg_to_core("Received packet from bus servo.");
 
     return packet_controller.rx_finished == true ? OK : ERR;
 }
@@ -228,21 +230,19 @@ void execute_bus_servo_task() {
         }
 
         // Set core packet length
-        packet_controller.tx_packet.data_length = 3 + sizeof(response->servos[0]) * response->servo_count;
+        core_packet_controller.tx_packet.data_length = 3 + sizeof(response->servos[0]) * response->servo_count;
+
+        // Transmit packet to core
+        transmit_packet_to_core(&core_packet_controller.tx_packet);
     } break;
     default:
         return;
     }
-
-    // Transmit packet to core
-    transmit_packet_to_core(&core_packet_controller.tx_packet);
 }
 
 Res read_bus_servo_id() {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, 1, 3, READ_BUS_SERVO_ID);
-
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
@@ -255,8 +255,6 @@ Res read_bus_servo_id() {
 Res read_bus_servo_angle(uint8_t id, uint8_t *angle) {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, id, 3, READ_BUS_SERVO_ANGLE);
-
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     Res ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
@@ -283,8 +281,6 @@ Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duratio
     packet_controller.tx_packet.params[1] = (uint8_t)(_angle >> 8);
     packet_controller.tx_packet.params[2] = (uint8_t)duration;
     packet_controller.tx_packet.params[3] = (uint8_t)(duration >> 8);
-
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, true);

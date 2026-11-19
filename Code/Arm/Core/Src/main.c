@@ -124,8 +124,8 @@ int main(void)
     receive_packet_from_core();
 
     execute_bus_servo_task();
-    execute_led_task();
     execute_buzzer_task();
+    execute_led_task();
   }
   /* USER CODE END 3 */
 }
