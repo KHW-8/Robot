@@ -2,13 +2,13 @@
 # File
 .mxproject
 CMakePresets.json
-startup_stm32l476xx.s
-STM32L476xx_FLASH.ld
-
+*.ld
+*.s
 # Folder
 build
 cmake
-Core
+Core/Inc
+Core/Src/*
 Drivers
 mxproject
 mx.scratch

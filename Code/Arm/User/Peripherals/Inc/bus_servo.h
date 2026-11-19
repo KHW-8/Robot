@@ -82,6 +82,11 @@ typedef enum {
     RECEIVING_CHECKSUM
 } BusServoPacketRecvState;
 
+typedef enum {
+    BUS_SERVO_READ_MODE,
+    BUS_SERVO_WRITE_MODE
+} BusServoMode;
+
 #pragma pack(1)
 
 typedef struct {
@@ -130,5 +135,8 @@ void execute_bus_servo_task();
 // Transmit/Receive packet
 Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only);
 Res receive_packet_from_bus_servo(); // It is not suggested to call this function manually
+
+// Mode
+void set_mode(BusServoMode mode);
 
 #endif

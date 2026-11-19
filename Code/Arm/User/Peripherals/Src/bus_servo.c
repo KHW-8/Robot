@@ -2,10 +2,6 @@
 
 //////////* Header *//////////
 
-/* STD */
-#include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
 /* Arm */
 // Core
 #include "bus_servo_task.h"
@@ -17,6 +13,15 @@
 #include "response_type.h"
 // Misc
 #include "check_sum.h"
+
+/* STM32 */
+#include "stm32l4xx_hal_gpio.h"
+#include "stm32l4xx_hal.h"
+
+/* STD */
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 ///////////////////////////////
 
@@ -53,9 +58,10 @@ static UART_HandleTypeDef *huart_bus_servo = &huart1;
  * @brief Initialize bus servo packet
  */
 void initialize_bus_servo_packet(BusServoPacket *packet,
-                                    uint8_t servo_id, 
-                                    uint8_t data_length,
-                                    uint8_t cmd) {
+                                uint8_t servo_id, 
+                                uint8_t data_length,
+                                uint8_t cmd) 
+{
     packet->header1 = PACKET_HEADER;
     packet->header2 = PACKET_HEADER;
     packet->servo_id = servo_id;
@@ -72,11 +78,14 @@ void initialize_bus_servo_packet(BusServoPacket *packet,
  * @retval
  */
 Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
+    // Generate checksum
+    packet->chksum = generate_check_sum((uint8_t*)packet, packet->data_length, PACKET_HEADER_COUNT);
+
     // Set to write mode (reset bus servo pin)
-    HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_RESET);
+    set_mode(BUS_SERVO_WRITE_MODE);
 
     // Transmit packet
-    uint8_t  packet_length = PACKET_HEADER_COUNT + packet->data_length + 1;
+    uint8_t  packet_length = PACKET_HEADER_COUNT + packet->data_length + 1; // Header count + Data length + Checksum(1)
 
     uint8_t *pPacket = (uint8_t*)packet;
     
@@ -85,15 +94,15 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
         uint32_t initial_tick = HAL_GetTick();
         while (!__HAL_UART_GET_FLAG(huart_bus_servo, UART_FLAG_TXE)) {
             if (HAL_GetTick() - initial_tick > 10) {
-                HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+                set_mode(BUS_SERVO_READ_MODE);
                 return ERR;
             }   
         }
         
         if (i == packet_length - 1) 
-            huart_bus_servo->Instance->TDR = (packet->chksum & 0xFF);
+            huart_bus_servo->Instance->TDR = packet->chksum;
         else 
-            huart_bus_servo->Instance->TDR = (pPacket[i] & 0xFF);
+            huart_bus_servo->Instance->TDR = pPacket[i];
     }
 
 
@@ -101,13 +110,13 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
     uint32_t initial_tick = HAL_GetTick();
     while (!__HAL_UART_GET_FLAG(huart_bus_servo, UART_FLAG_TC)) {
         if (HAL_GetTick() - initial_tick > 10) {
-            HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+            set_mode(BUS_SERVO_READ_MODE);
             return ERR;
         }   
     }
 
     // Set to read mode (set bus servo pin)
-    HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+    set_mode(BUS_SERVO_READ_MODE);
 
     if (!tx_only)
         receive_packet_from_bus_servo();
@@ -116,6 +125,10 @@ Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
 }
 
 Res receive_packet_from_bus_servo() {
+    initialize_bus_servo_packet(&packet_controller.rx_packet, 0, 0, 0);
+    packet_controller.rx_packet.header1 = 0;
+    packet_controller.rx_packet.header2 = 0;
+
     packet_controller.rx_state = RECEIVING_HEADER1;
     packet_controller.rx_finished = false;                     
     packet_controller.param_index = 0;
@@ -142,7 +155,15 @@ void initialize_bus_servo() {
     packet_controller.time_out = 100;
 
     // Set to read mode (set bus servo pin)
-    HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET);
+    set_mode(BUS_SERVO_READ_MODE);
+}
+
+void set_mode(BusServoMode mode) {
+    switch (mode) {
+    case BUS_SERVO_READ_MODE: HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_RESET); break;
+    case BUS_SERVO_WRITE_MODE: HAL_GPIO_WritePin(BUS_SERVO_EN_GPIO_Port, BUS_SERVO_EN_Pin, GPIO_PIN_SET); break;
+    default: break;
+    }
 }
 
 Res add_bus_servo_task(BusServoTask task) {
@@ -183,6 +204,8 @@ void execute_bus_servo_task() {
             );
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
+       
+            HAL_Delay(10);
         }
     } break;
     case READ_BUS_SERVO_ANGLE: {
@@ -202,24 +225,24 @@ void execute_bus_servo_task() {
             }
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
+
+            HAL_Delay(10);
         }
 
         // Set core packet length
-        packet_controller.tx_packet.data_length = 3 + sizeof(response->servos[0]) * response->servo_count;
+        core_packet_controller.tx_packet.data_length = 3 + sizeof(response->servos[0]) * response->servo_count;
+
+        // Transmit packet to core
+        transmit_packet_to_core(&core_packet_controller.tx_packet);
     } break;
     default:
         return;
     }
-
-    // Transmit packet to core
-    transmit_packet_to_core(&core_packet_controller.tx_packet);
 }
 
 Res read_bus_servo_id() {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, 1, 3, READ_BUS_SERVO_ID);
-
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
 
     // Send packet
     uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
@@ -233,14 +256,13 @@ Res read_bus_servo_angle(uint8_t id, uint8_t *angle) {
     // Create packet
     initialize_bus_servo_packet(&packet_controller.tx_packet, id, 3, READ_BUS_SERVO_ANGLE);
 
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
-
     // Send packet
     Res ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
     if (ret != OK)
         return ERR;
 
-    *angle = (uint8_t)(*(uint16_t*)packet_controller.rx_packet.params) * 240 / 1000;
+    uint16_t pulse = packet_controller.rx_packet.params[1] << 8 | packet_controller.rx_packet.params[0];
+    *angle = pulse * 240/1000;
 
     return OK;
 }
@@ -260,10 +282,8 @@ Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duratio
     packet_controller.tx_packet.params[2] = (uint8_t)duration;
     packet_controller.tx_packet.params[3] = (uint8_t)(duration >> 8);
 
-    packet_controller.tx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.tx_packet, packet_controller.tx_packet.data_length, PACKET_HEADER_COUNT);
-
     // Send packet
-    uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, false);
+    uint32_t ret = transmit_packet_to_bus_servo(&packet_controller.tx_packet, true);
     if (ret != OK)
         return ERR;
 

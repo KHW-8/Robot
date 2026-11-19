@@ -40,7 +40,11 @@ static uint8_t rx_buf[CORE_PACKET_DATA_MAX_LENGTH];
 ////////////////////* Functions *////////////////////
 
 Res transmit_packet_to_core(CorePacket *packet) {
-    uint8_t  packet_length = PACKET_HEADER_COUNT + 2 + packet->data_length;
+    // Generate checksum
+    packet->chksum = generate_check_sum(packet->data, packet->data_length, 0);
+
+    // Set packet length
+    uint8_t  packet_length = PACKET_HEADER_COUNT + 3 + packet->data_length;
 
     uint8_t *pPacket = (uint8_t*)packet;
 
@@ -52,7 +56,7 @@ Res transmit_packet_to_core(CorePacket *packet) {
                 return ERR;
         }
         
-        huart_core->Instance->TDR = (pPacket[i] & 0xFF);
+        huart_core->Instance->TDR = pPacket[i];
     }
 
 
@@ -70,6 +74,7 @@ void initialize_core_packet(CorePacket *packet, uint8_t peripheral) {
     packet->header1 = CORE_PACKET_HEADER;
     packet->header2 = CORE_PACKET_HEADER;
     packet->peripheral = peripheral;
+    packet->chksum = 0;
     packet->data_length = 0;
     memset(packet->data, 0, sizeof(packet->data));
 }
@@ -82,7 +87,7 @@ Res check_packet(CorePacket *packet) {
 
     // Check checksum
     uint8_t checksum = generate_check_sum(packet->data, packet->data_length, 0);
-    if (packet->checksum != checksum)
+    if (packet->chksum != checksum)
         return ERR;
 
     return OK;
@@ -100,6 +105,33 @@ Res transmit_byte_to_core(uint8_t byte) {
 
     return OK;
 }
+
+Res transmit_bytes_to_core(const uint8_t *array, const uint8_t size) {
+    if (array == NULL)
+        return ERR;
+
+    for (uint16_t i = 0; i < size; i++) {
+        // Wait until TDR is empty (TXE flag is set)
+        uint32_t initial_tick = HAL_GetTick();
+        while (!__HAL_UART_GET_FLAG(huart_core, UART_FLAG_TXE)) {
+            if (HAL_GetTick() - initial_tick > 10) 
+                return ERR;
+        }
+        
+        huart_core->Instance->TDR = array[i];
+    }
+
+
+    // Wait until TDR is empty (TC flag is set)
+    uint32_t initial_tick = HAL_GetTick();
+    while (!__HAL_UART_GET_FLAG(huart_core, UART_FLAG_TC)) {
+        if (HAL_GetTick() - initial_tick > 10) 
+            return ERR;
+    }
+
+    return OK;
+}
+
 
 Res transmit_msg_to_core(const char *buf) {
     char msg[128];

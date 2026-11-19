@@ -90,10 +90,10 @@ add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
 )
 
 # Copy binary file to board
-if (EXISTS "H:/")
+if (EXISTS "I:/")
     add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
         "${CMAKE_BINARY_DIR}/Arm.bin"
-        "H:/Arm.bin"
+        "I:/Arm.bin"
     )
 endif()

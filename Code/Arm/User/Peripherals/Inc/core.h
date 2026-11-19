@@ -33,7 +33,7 @@ typedef struct {
     uint8_t header1;
     uint8_t header2;
     uint8_t peripheral;
-    uint8_t checksum;
+    uint8_t chksum;
     uint8_t data_length;
     uint8_t data[CORE_PACKET_DATA_MAX_LENGTH];
 } CorePacket;
@@ -63,6 +63,7 @@ void initialize_core_packet(CorePacket *packet, uint8_t peripheral);
 // Transmit/Receive
 Res transmit_packet_to_core(CorePacket *packet);
 Res transmit_byte_to_core(uint8_t byte);
+Res transmit_bytes_to_core(const uint8_t *array, const uint8_t size);
 Res transmit_msg_to_core(const char* buf);
 
 void receive_packet_from_core();
