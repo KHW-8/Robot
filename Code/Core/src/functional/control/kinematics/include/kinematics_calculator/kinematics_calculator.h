@@ -1,15 +1,16 @@
-#ifndef KINEMATICS_KinematicsCalculator_NODE_H
-#define KINEMATICS_KinematicsCalculator_NODE_H
+#ifndef KINEMATICS_CALCULATOR_H
+#define KINEMATICS_CALCULATOR_H
 
 //////////* Headers *//////////
 
 /* Core */
 #include "inverse_kinematics.h"
-#include "kinematics_msgs/msg/transformation.hpp"
 
 /* ROS */
+#include <memory>
 #include <rclcpp/node.hpp>
 #include <rclcpp/service.hpp>
+#include "kinematics_msgs/srv/pose.hpp"
 #include "std_srvs/srv/trigger.hpp"
 
 /* STD */
@@ -53,7 +54,7 @@ private:
     auto rpy(const SymEngine::DenseMatrix& rotation_matrix) -> void;
 
     // Callback
-    auto receive_transformation_from_vision(const kinematics_msgs::msg::Transformation& msg);
+    auto receive_pose(std::shared_ptr<kinematics_msgs::srv::Pose::Request> request, std::shared_ptr<kinematics_msgs::srv::Pose::Response> response) -> void;
 
     auto initialization_complete([[maybe_unused]]std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
 
@@ -77,9 +78,7 @@ private:
 
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
-
-    // Subscription
-    rclcpp::Subscription<kinematics_msgs::msg::Transformation>::SharedPtr sub_vision;
+    rclcpp::Service<kinematics_msgs::srv::Pose>::SharedPtr srv_pose;
 
     // Kinematics
     std::vector<SymEngine::DenseMatrix> transformation_operators;

@@ -4,20 +4,24 @@
 
 /* Core */
 //// Hardware
-#include "board_msg/msg/packet.hpp"
+#include "board_msgs/msg/packet.hpp"
 #include "bus_servo.h"
 #include "gui_msgs/msg/command.hpp"
+#include "kinematics_msgs/srv/pose.hpp"
+#include "peripheral_msgs/msg/bus_servo.hpp"
 
 /* ROS2 */
-#include <functional>
+#include <ostream>
 #include <rclcpp/executors.hpp>
+#include <rclcpp/future_return_code.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
 /* STD */
-#include <cstdint>
 #include <chrono>
-#include <map>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -31,15 +35,15 @@ RobotController::RobotController()
     initialize();
 }
 
-auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msg::msg::BusServo::id)>& ids) -> void {
+auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msgs::msg::BusServo::id)>& ids) -> void {
    // Create request
-    auto request = peripheral_msg::msg::BusServoRequest();
+    auto request = peripheral_msgs::msg::BusServoRequest();
     request.cmd = static_cast<uint8_t>(BusServoCMD::READ_ANGLE);
     request.query_only = true;
 
     for (const auto& id : ids) {
         // Generate servo message
-        auto servo = peripheral_msg::msg::BusServo();
+        auto servo = peripheral_msgs::msg::BusServo();
         servo.id = id;
 
         request.servos.emplace_back(servo);
@@ -52,21 +56,26 @@ auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msg::
         RCLCPP_INFO(rclcpp::get_logger(""), "Servo Id: %d", servo.id);
 }
 
-
-auto RobotController::set_servo_pos(const decltype(peripheral_msg::msg::BusServo::id)& id, 
-                                    const decltype(peripheral_msg::msg::BusServo::angle)& angle, 
-                                    const decltype(peripheral_msg::msg::BusServo::duration)& duration) -> void
+auto RobotController::set_servo_pos(const decltype(peripheral_msgs::msg::BusServo::id)& id, 
+                       const decltype(peripheral_msgs::msg::BusServo::angle)& angle, 
+                       const decltype(peripheral_msgs::msg::BusServo::duration)& duration) -> void 
 {
-    // Generate servo message
-    auto servo = peripheral_msg::msg::BusServo();
+    auto servo = peripheral_msgs::msg::BusServo();
     servo.id = id;
     servo.angle = angle;
     servo.duration = duration;
 
-    auto request = peripheral_msg::msg::BusServoRequest();
+    set_servo_pos({servo});
+}
+
+
+auto RobotController::set_servo_pos(std::vector<peripheral_msgs::msg::BusServo> servos_pos) -> void
+{
+    // Generate servo message
+    auto request = peripheral_msgs::msg::BusServoRequest();
     request.cmd = static_cast<uint8_t>(BusServoCMD::SET_ROTAION_ANGLE_AND_DURATION);
     request.query_only = false;
-    request.servos.emplace_back(servo);
+    request.servos = servos_pos;
 
     // Send message
     this->pub_servo->publish(request);
@@ -77,12 +86,12 @@ auto RobotController::set_servo_pos(const decltype(peripheral_msg::msg::BusServo
 }
 
 
-auto RobotController::set_buzzer(decltype(peripheral_msg::msg::BuzzerRequest::frequency) freq, 
-                                decltype(peripheral_msg::msg::BuzzerRequest::on_duration) on_duration, 
-                                decltype(peripheral_msg::msg::BuzzerRequest::off_duration) off_duration, 
-                                decltype(peripheral_msg::msg::BuzzerRequest::repeat_count) repeat_count) -> void 
+auto RobotController::set_buzzer(decltype(peripheral_msgs::msg::BuzzerRequest::frequency) freq, 
+                                decltype(peripheral_msgs::msg::BuzzerRequest::on_duration) on_duration, 
+                                decltype(peripheral_msgs::msg::BuzzerRequest::off_duration) off_duration, 
+                                decltype(peripheral_msgs::msg::BuzzerRequest::repeat_count) repeat_count) -> void 
 {
-    auto msg = peripheral_msg::msg::BuzzerRequest();
+    auto msg = peripheral_msgs::msg::BuzzerRequest();
     msg.frequency = freq;
     msg.on_duration = on_duration;
     msg.off_duration = off_duration;
@@ -100,18 +109,18 @@ auto RobotController::set_buzzer(decltype(peripheral_msg::msg::BuzzerRequest::fr
     );
 }
 
-auto RobotController::set_led(decltype(peripheral_msg::msg::LED::id) led_id, 
-                 decltype(peripheral_msg::msg::LED::on_duration) on_duration, 
-                 decltype(peripheral_msg::msg::LED::off_duration) off_duration, 
-                 decltype(peripheral_msg::msg::LED::repeat_count) repeat_count) -> void
+auto RobotController::set_led(decltype(peripheral_msgs::msg::LED::id) led_id, 
+                 decltype(peripheral_msgs::msg::LED::on_duration) on_duration, 
+                 decltype(peripheral_msgs::msg::LED::off_duration) off_duration, 
+                 decltype(peripheral_msgs::msg::LED::repeat_count) repeat_count) -> void
 {
-    auto led = peripheral_msg::msg::LED();
+    auto led = peripheral_msgs::msg::LED();
     led.id = led_id;
     led.on_duration = on_duration;
     led.off_duration = off_duration;
     led.repeat_count = repeat_count;
 
-    auto msg = peripheral_msg::msg::LEDRequest();
+    auto msg = peripheral_msgs::msg::LEDRequest();
     msg.leds.emplace_back(led);
     
     this->pub_led->publish(msg);
@@ -126,6 +135,39 @@ auto RobotController::set_led(decltype(peripheral_msg::msg::LED::id) led_id,
     );
 }
 
+auto RobotController::test() -> void {
+    auto request = std::make_shared<kinematics_msgs::srv::Pose::Request>();
+    request->pose.position.x = 0.2;
+    request->pose.position.y = -0.1;
+    request->pose.position.z = 0.05;
+    request->pitch = 90;
+
+    auto future = this->cli_kinematics_calculator->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), future) != rclcpp::FutureReturnCode::SUCCESS) {
+         RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Function: %s, Line: %d, Error: Service call failed.", 
+            __FILE__, 
+            __FUNCTION__,
+            __LINE__
+        );
+
+        return;
+    }
+
+    auto res = future.get();
+    if (!res->success) {
+        RCLCPP_INFO(rclcpp::get_logger(""), "No solutions.");
+        return;
+    }
+
+    uint8_t i = 2;
+    for (const auto& e : res->servo_angles) 
+        RCLCPP_INFO(rclcpp::get_logger(""), "Servo %d Angle: %f", i++, e);
+}
+
+
 auto RobotController::receive_control_panel_msg(const gui_msgs::msg::Command& msg) -> void {
     set_servo_pos(msg.servo_id, msg.angle, 1);
 }
@@ -138,11 +180,15 @@ auto RobotController::initialization_complete([[maybe_unused]]const std::shared_
 }
 
 auto RobotController::initialize() -> void {
+    // Hardware
     initialize_board_controller();
     initialize_buzzer();
     initialize_led();
     initialize_servos();
+    // Functional
+    initialize_kinematics_calculator();
     initialize_vision();
+    // Application
     initialize_control_panel();
 
     // Complete initialization and notify all other nodes
@@ -154,59 +200,70 @@ auto RobotController::initialize() -> void {
 
 auto RobotController::initialize_board_controller() -> void {
     // Wait for board controller
-    this->cli_board_controller = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
-    this->cli_board_controller->wait_for_service();
+    this->cli_board_controller_ready = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
+    this->cli_board_controller_ready->wait_for_service();
 
     // Create a publisher for board controller
-    this->pub_packet = this->create_publisher<board_msg::msg::Packet>("/board_controller/packet", 10);
+    this->pub_packet = this->create_publisher<board_msgs::msg::Packet>("/board_controller/packet", 10);
 }
 
 auto RobotController::initialize_buzzer() -> void {
     // Wait for board buzzer
-    this->cli_buzzer = this->create_client<std_srvs::srv::Trigger>("/buzzer/initialization_complete");
-    this->cli_buzzer->wait_for_service();
+    this->cli_buzzer_ready = this->create_client<std_srvs::srv::Trigger>("/buzzer/initialization_complete");
+    this->cli_buzzer_ready->wait_for_service();
 
     // Create a publisher for buzzer
-    this->pub_buzzer = this->create_publisher<peripheral_msg::msg::BuzzerRequest>("/buzzer", 10);
+    this->pub_buzzer = this->create_publisher<peripheral_msgs::msg::BuzzerRequest>("/buzzer", 10);
 }
 
 auto RobotController::initialize_led() -> void {
     // Wait for LED
-    this->cli_led = this->create_client<std_srvs::srv::Trigger>("/led/initialization_complete");
-    this->cli_led->wait_for_service();
+    this->cli_led_ready = this->create_client<std_srvs::srv::Trigger>("/led/initialization_complete");
+    this->cli_led_ready->wait_for_service();
 
     // Create a publisher for LED
-    this->pub_led = this->create_publisher<peripheral_msg::msg::LEDRequest>("/led",10);
+    this->pub_led = this->create_publisher<peripheral_msgs::msg::LEDRequest>("/led",10);
 }
 
 auto RobotController::initialize_servos() -> void {
     // Wait for servo
-    this->cli_servo = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
-    this->cli_servo->wait_for_service();
+    this->cli_sevo_ready = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
+    this->cli_sevo_ready->wait_for_service();
 
     // Create a publisher for servo 
-    this->pub_servo = this->create_publisher<peripheral_msg::msg::BusServoRequest>("/bus_servo", 10);
+    this->pub_servo = this->create_publisher<peripheral_msgs::msg::BusServoRequest>("/bus_servo", 10);
 
-    // Set servos' angle
-    std::map<uint8_t, uint8_t> map = {
-        {1, 0},
-        {2, 120},
-        {3, 30},
-        {4, 195},
-        {5, 140},
-        {6, 120},
+    // Set servos' positions
+    std::vector<peripheral_msgs::msg::BusServo> servos_positions = {
+        peripheral_msgs::msg::BusServo{}.set__id(1).set__angle(0).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(2).set__angle(120).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(3).set__angle(30).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(4).set__angle(195).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(5).set__angle(140).set__duration(1),
+        peripheral_msgs::msg::BusServo{}.set__id(6).set__angle(120).set__duration(1),
     };
 
-    for (auto pair : map) {
-        set_servo_pos(pair.first, pair.second, 1);
+    for (auto servo : servos_positions) {
+        set_servo_pos(servo.id, servo.angle, servo.duration);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+
+    // set_servo_pos(servos_positions);
 }
 
+auto RobotController::initialize_kinematics_calculator() -> void {
+    // Wait for kinematics calculator
+    this->cli_kinematics_calculator_ready = this->create_client<std_srvs::srv::Trigger>("/kinematics_calculator/initialization_complete");
+    this->cli_kinematics_calculator_ready->wait_for_service();
+
+    this->cli_kinematics_calculator = this->create_client<kinematics_msgs::srv::Pose>("/kinematics_calculator/pose");
+}
+
+
 auto RobotController::initialize_vision() -> void {
-    // Wait for board controller
-    this->cli_vision = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
-    this->cli_vision->wait_for_service();
+    // Wait for vision
+    // this->cli_vision_ready = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
+    // this->cli_vision_ready->wait_for_service();
 }
 
 auto RobotController::initialize_control_panel() -> void {

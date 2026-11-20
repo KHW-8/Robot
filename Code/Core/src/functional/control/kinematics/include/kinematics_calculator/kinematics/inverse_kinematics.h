@@ -8,6 +8,7 @@
 #include <eigen3/Eigen/Dense>
 
 /* STD*/
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <sys/types.h>
 #include <vector>
 
@@ -24,11 +25,13 @@ class InverseKinematics {
 public:
     static auto calculate(SymEngine::DenseMatrix T, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> std::vector<Solution>;
     static auto calculate(Eigen::Matrix4d T, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> std::vector<Solution>;
+    static auto calculate(Eigen::Vector3d P, double pitch, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> std::vector<Solution>;
 
 private:
     static auto calculate_theta2_theta3_theta4(double px, double py, double pz, double theta1, double theta234) -> std::vector<Solution>;
     static auto calculate_theta2_theta4(double theta3, double theta234, double A, double B) -> Solution;
 
+    static auto adjust_solutions(std::vector<Solution>& solutions, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> void;
     static auto filter_solutions(std::vector<Solution>& solutions, std::map<uint8_t, std::pair<double, double> > angle_interval_map) -> void;
 };
 

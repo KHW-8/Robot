@@ -1,26 +1,29 @@
-#include "kinematics_calculator.h"
-
 //////////* Headers *//////////
+#include "kinematics_calculator.h"
 
 /* Core */
 //// Kinematics
 #include "forward_kinematics.h"
 #include "inverse_kinematics.h"
+//// Interfaces
 //// Global
-#include "kinematics_msgs/msg/transformation.hpp"
+#include "kinematics_msgs/srv/pose.hpp"
 #include "math.h"
 #include "utility.hpp"
 
+/* Eigen */
+#include <eigen3/Eigen/src/Core/Matrix.h>
+
 /* ROS */
-#include <algorithm>
-#include <cstdint>
-#include <cstdio>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
 /* STD */
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
 #include <cmath>
 #include <functional>
 
@@ -48,15 +51,37 @@ KinematicsCalculator::KinematicsCalculator()
     : Node("kinematics_calculator")
 {
     initialize();
-
-    calculate(KinematicsType::FORWARD);
 }
 
-auto KinematicsCalculator::receive_transformation_from_vision(const kinematics_msgs::msg::Transformation& msg) {
-    InverseKinematics::calculate(
-        Eigen::Matrix<double, 4, 4, Eigen::RowMajor>(msg.transformation.data()), 
+auto KinematicsCalculator::receive_pose(std::shared_ptr<kinematics_msgs::srv::Pose::Request> request, 
+                                        std::shared_ptr<kinematics_msgs::srv::Pose::Response> response) -> void
+{
+    auto solutions = InverseKinematics::calculate(
+        Eigen::Vector3d{
+            request->pose.position.x,
+            request->pose.position.y,
+            request->pose.position.z,
+        },
+        request->pitch,
         this->theta_interval_map
     );
+
+    if (solutions.empty()) {
+        RCLCPP_INFO(rclcpp::get_logger(""), "No solutions.");
+
+        response->success = false;
+        return;
+    }
+
+    for (auto it = solutions.begin()->theta_value_map.rbegin(); it != solutions.begin()->theta_value_map.rend(); it++) {
+        const auto& theta_id = it->first;
+        const auto& theta = it->second;
+
+        auto res = theta_to_servo_angle(theta_id, theta);
+        response->servo_angles.emplace_back(res.first ? res.second : 0);
+    }
+
+    response->success = true;
 }
 
 
@@ -161,6 +186,13 @@ auto KinematicsCalculator::calculate(KinematicsType type) -> void {
         substitute(T, SymEngine::symbol("Θ5"), SymEngine::real_double(deg_to_rad(theta5)));
     } break;
     case KinematicsType::INVERSE: {
+        auto solutions = InverseKinematics::calculate(
+            Eigen::Vector3d{0.2, -0.1, 0.05}, 
+            90,
+            this->theta_interval_map
+        );
+
+        print_solutions(solutions);
     } break;
     default: break;
     }
@@ -205,19 +237,27 @@ auto KinematicsCalculator::generate_forward_kinematics_equation() -> void {
 
 
 auto KinematicsCalculator::initialize() -> void {
-    this->sub_vision = this->create_subscription<kinematics_msgs::msg::Transformation>(
-        "/vision/extrinsic_parameters", 
-        1,
-        std::bind(&KinematicsCalculator::receive_transformation_from_vision, this, std::placeholders::_1)
-    );
-
     initialize_servo_angle_relation_map();
 
     generate_forward_kinematics_equation();
 
+    this->srv_pose = this->create_service<kinematics_msgs::srv::Pose>(
+        "~/pose", 
+        std::bind(
+            &KinematicsCalculator::receive_pose, 
+            this, 
+            std::placeholders::_1,
+            std::placeholders::_2
+        )
+    );
+
     this->srv_ini = this->create_service<std_srvs::srv::Trigger>(
         "~/initialization_complete", 
-        std::bind(&KinematicsCalculator::initialization_complete, this, std::placeholders::_1, std::placeholders::_2)
+        std::bind(
+            &KinematicsCalculator::initialization_complete, 
+            this,
+            std::placeholders::_1, 
+            std::placeholders::_2)
     );
 }
 

@@ -22,6 +22,8 @@
 /* Compare */
 auto equals(double a, double b) -> bool;
 
+auto is_in_interval(double x, std::pair<double, double> interval) -> bool;
+
 /* Converter */
 auto deg_to_rad(double degree) -> double;
 
@@ -32,9 +34,6 @@ auto pulse_to_deg(size_t pulse) -> double;
 auto pulse_to_rad(size_t pulse) -> double;
 
 auto to_equivalent_angle(double angle) -> double;
-
-/* Inverse */
-auto inverse_transformation_matrix(Eigen::Matrix4d T) -> Eigen::Matrix4d;
 
 /* Simplify */
 auto nsimplify(const double& num) -> double;
@@ -54,6 +53,6 @@ auto simplify(SymEngine::DenseMatrix& m) -> void;
 
 auto product(std::vector<SymEngine::DenseMatrix> v, size_t begin=0, size_t end=0) -> SymEngine::DenseMatrix;
 
-#endif
-
 /////////////////////////////////
+
+#endif
