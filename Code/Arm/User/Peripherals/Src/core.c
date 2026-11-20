@@ -195,7 +195,6 @@ void handle_bus_servo(CorePacket *packet) {
         BusServoAngleSettingRequest *request = (BusServoAngleSettingRequest*)packet->data;
         task.cmd = request->cmd;
         task.servo_count = request->servo_count;
-        task.servo_count = request->cmd;
         task.read_only = false;
 
         for (uint8_t i = 0; i < request->servo_count; i++) {

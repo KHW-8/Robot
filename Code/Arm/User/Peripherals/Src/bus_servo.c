@@ -20,7 +20,6 @@
 
 /* STD */
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 ///////////////////////////////
@@ -204,7 +203,7 @@ void execute_bus_servo_task() {
             );
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
-       
+            
             HAL_Delay(10);
         }
     } break;
@@ -225,7 +224,7 @@ void execute_bus_servo_task() {
             }
 
             current_task.servos[i].state = BUS_SERVO_SUSPEND_MODE;
-
+      
             HAL_Delay(10);
         }
 
