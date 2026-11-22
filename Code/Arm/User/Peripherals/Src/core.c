@@ -44,7 +44,7 @@ Res transmit_packet_to_core(CorePacket *packet) {
     packet->chksum = generate_check_sum(packet->data, packet->data_length, 0);
 
     // Set packet length
-    uint8_t  packet_length = PACKET_HEADER_COUNT + 3 + packet->data_length;
+    uint8_t  packet_length = CORE_PACKET_BASIC_INFORMATION_SIZE + packet->data_length;
 
     uint8_t *pPacket = (uint8_t*)packet;
 
@@ -188,6 +188,7 @@ void handle_core_packet(CorePacket *packet) {
 void handle_bus_servo(CorePacket *packet) {
     // Create a task
     BusServoTask task;
+    task.request_id = packet->request_id;
 
     switch (packet->data[0]) {
     case SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION: {

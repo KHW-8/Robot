@@ -13,10 +13,18 @@
 #include "bus_servo_task.h"
 //// Global
 #include "global.h"
+
 ///////////////////////////////
 
+///////////* Macros *///////////
+
 // Packet
+#define BUS_SERVO_PACKET_HEADER 0x55
+#define BUS_SERVO_PACKET_HEADER_COUNT 2
+
 #define BUS_SERVO_RX_BUFFER_SIZE 255
+
+////////////////////////////////
 
 typedef enum {
     SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION = 1,

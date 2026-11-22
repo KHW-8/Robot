@@ -3,7 +3,9 @@
 //////////* Header *//////////
 /* Arm */
 //// Core
+#include "core.h"
 #include "main.h"
+#include <stdio.h>
 //// User
 // Core
 ///////////////////////////////

@@ -1,6 +1,5 @@
-#include "bus_servo.h"
-
 //////////* Header *//////////
+#include "bus_servo.h"
 
 /* Arm */
 // Core
@@ -61,8 +60,8 @@ void initialize_bus_servo_packet(BusServoPacket *packet,
                                 uint8_t data_length,
                                 uint8_t cmd) 
 {
-    packet->header1 = PACKET_HEADER;
-    packet->header2 = PACKET_HEADER;
+    packet->header1 = BUS_SERVO_PACKET_HEADER;
+    packet->header2 = BUS_SERVO_PACKET_HEADER;
     packet->servo_id = servo_id;
     packet->data_length = data_length;
     packet->cmd = cmd;
@@ -78,13 +77,13 @@ void initialize_bus_servo_packet(BusServoPacket *packet,
  */
 Res transmit_packet_to_bus_servo(BusServoPacket *packet, bool tx_only){
     // Generate checksum
-    packet->chksum = generate_check_sum((uint8_t*)packet, packet->data_length, PACKET_HEADER_COUNT);
+    packet->chksum = generate_check_sum((uint8_t*)packet, packet->data_length, BUS_SERVO_PACKET_HEADER_COUNT);
 
     // Set to write mode (reset bus servo pin)
     set_mode(BUS_SERVO_WRITE_MODE);
 
     // Transmit packet
-    uint8_t  packet_length = PACKET_HEADER_COUNT + packet->data_length + 1; // Header count + Data length + Checksum(1)
+    uint8_t  packet_length = BUS_SERVO_PACKET_HEADER_COUNT + packet->data_length + 1; // Header count + Data length + Checksum(1)
 
     uint8_t *pPacket = (uint8_t*)packet;
     
@@ -192,6 +191,7 @@ void execute_bus_servo_task() {
 
     // Initialize a packet to tranmit to the core
     initialize_core_packet(&core_packet_controller.tx_packet, BUS_SERVO);
+    core_packet_controller.tx_packet.request_id = current_task.request_id;
 
     switch (current_task.cmd) {
     case SET_BUS_SERVO_ROTAION_ANGLE_AND_DURATION: {
@@ -298,13 +298,13 @@ Res set_bus_servo_angle_and_duration(uint8_t id, uint8_t angle, uint16_t duratio
 bool handle_rx_buffer(uint8_t rx_buf) {
     switch (packet_controller.rx_state) {
         case RECEIVING_HEADER1: {
-            packet_controller.rx_state = rx_buf == PACKET_HEADER ? RECEIVING_HEADER2 : RECEIVING_HEADER1;
-            packet_controller.rx_packet.header1 = PACKET_HEADER;
+            packet_controller.rx_state = rx_buf == BUS_SERVO_PACKET_HEADER ? RECEIVING_HEADER2 : RECEIVING_HEADER1;
+            packet_controller.rx_packet.header1 = BUS_SERVO_PACKET_HEADER;
             return false;
         }
         case RECEIVING_HEADER2: {
-            packet_controller.rx_state = rx_buf == PACKET_HEADER ? RECEIVING_SERVO_ID : RECEIVING_HEADER2;
-            packet_controller.rx_packet.header2 = PACKET_HEADER;
+            packet_controller.rx_state = rx_buf == BUS_SERVO_PACKET_HEADER ? RECEIVING_SERVO_ID : RECEIVING_HEADER2;
+            packet_controller.rx_packet.header2 = BUS_SERVO_PACKET_HEADER;
             return false;
         }
         case RECEIVING_SERVO_ID: {
@@ -337,7 +337,7 @@ bool handle_rx_buffer(uint8_t rx_buf) {
             packet_controller.rx_state = RECEIVING_HEADER1;
 
             // Generate the received packet checksum
-            packet_controller.rx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.rx_packet, packet_controller.rx_packet.data_length, PACKET_HEADER_COUNT);
+            packet_controller.rx_packet.chksum = generate_check_sum((uint8_t*)&packet_controller.rx_packet, packet_controller.rx_packet.data_length, BUS_SERVO_PACKET_HEADER_COUNT);
 
             /*
              * Verify checksum.

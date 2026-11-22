@@ -7,7 +7,6 @@
 //////////* Header *//////////
 /* STD */
 #include <stdint.h>
-#include <stdbool.h>
 /* Arm */
 #include "global.h"
 ///////////////////////////////
@@ -17,6 +16,7 @@
 // Core packet
 #define CORE_PACKET_HEADER 0x55
 #define CORE_PACKET_HEADER_COUNT 2
+#define CORE_PACKET_BASIC_INFORMATION_SIZE 7
 #define CORE_PACKET_DATA_MAX_LENGTH 1024
 
 ///////////////////////////////////////
@@ -32,6 +32,7 @@ typedef enum {
 typedef struct {
     uint8_t header1;
     uint8_t header2;
+    uint16_t request_id;
     uint8_t peripheral;
     uint8_t chksum;
     uint8_t data_length;
