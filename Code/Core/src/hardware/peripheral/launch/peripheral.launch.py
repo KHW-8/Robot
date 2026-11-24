@@ -43,6 +43,6 @@ def generate_launch_description():
         board_controller,
         bus_servo,
         buzzer,
-        # camera,
+        camera,
         led,
     ])

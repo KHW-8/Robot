@@ -210,49 +210,43 @@ auto BoardController::receive() -> void {
     size_t data_length = 0;
     bool start_to_receive_packet = false;
 
-    bool receive_msg_only = false;
-    
     while (rclcpp::ok()) {
-        if (receive_msg_only) {
-            receive_msg_from_board();
-        } else {
-            boost::asio::read(this->serial, boost::asio::buffer(&byte, 1));
+        boost::asio::read(this->serial, boost::asio::buffer(&byte, 1));
 
-            if (byte == PACKET_HEADER && !start_to_receive_packet) 
-                start_to_receive_packet = true;
+        if (byte == PACKET_HEADER && !start_to_receive_packet) 
+            start_to_receive_packet = true;
 
-            if (start_to_receive_packet) { 
-                packet.emplace_back(byte);
+        if (start_to_receive_packet) { 
+            packet.emplace_back(byte);
 
-                if (packet.size() == 5) {
-                    try {
-                        data_length = packet.at(4);
-                    } catch (const std::exception& e) {
-                        RCLCPP_ERROR(
-                            rclcpp::get_logger(""),
-                            "File: %s, Function: %s, Line: %d, Error: Packet length error.",
-                            __FILE__,
-                            __FUNCTION__,
-                            __LINE__
-                        );
-
-                        start_to_receive_packet = false;
-                        packet.clear();
-
-                        continue;
-                    }
-                }
-        
-                if (packet.size() - 5 == data_length) {
-                    const auto& res = check_packet(packet);
-                    const auto& complete = res.first;
-                    const auto& haveError = res.second;
-                    if (complete && !haveError) 
-                        handle_packet(packet);
+            if (packet.size() == 5) {
+                try {
+                    data_length = packet.at(4);
+                } catch (const std::exception& e) {
+                    RCLCPP_ERROR(
+                        rclcpp::get_logger(""),
+                        "File: %s, Function: %s, Line: %d, Error: Packet length error.",
+                        __FILE__,
+                        __FUNCTION__,
+                        __LINE__
+                    );
 
                     start_to_receive_packet = false;
                     packet.clear();
+
+                    continue;
                 }
+            }
+    
+            if (packet.size() - 5 == data_length) {
+                const auto& res = check_packet(packet);
+                const auto& complete = res.first;
+                const auto& haveError = res.second;
+                if (complete && !haveError) 
+                    handle_packet(packet);
+
+                start_to_receive_packet = false;
+                packet.clear();
             }
         }
     }

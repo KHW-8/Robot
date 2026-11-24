@@ -11,18 +11,15 @@
 #include "peripheral_msgs/msg/bus_servo.hpp"
 
 /* ROS2 */
-#include <ostream>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/future_return_code.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
 /* STD */
-#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <thread>
 #include <vector>
 
 ///////////////////////////////
@@ -243,12 +240,7 @@ auto RobotController::initialize_servos() -> void {
         peripheral_msgs::msg::BusServo{}.set__id(6).set__angle(120).set__duration(1),
     };
 
-    for (auto servo : servos_positions) {
-        set_servo_pos(servo.id, servo.angle, servo.duration);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    // set_servo_pos(servos_positions);
+    set_servo_pos(servos_positions);
 }
 
 auto RobotController::initialize_kinematics_calculator() -> void {
@@ -262,8 +254,8 @@ auto RobotController::initialize_kinematics_calculator() -> void {
 
 auto RobotController::initialize_vision() -> void {
     // Wait for vision
-    // this->cli_vision_ready = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
-    // this->cli_vision_ready->wait_for_service();
+    this->cli_vision_ready = this->create_client<std_srvs::srv::Trigger>("/vision/initialization_complete");
+    this->cli_vision_ready->wait_for_service();
 }
 
 auto RobotController::initialize_control_panel() -> void {
