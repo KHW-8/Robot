@@ -4,12 +4,13 @@
 
 /* Core */
 //// Hardware
-#include "board_msgs/msg/packet.hpp"
 #include "bus_servo.h"
 #include "gui_msgs/msg/command.hpp"
 #include "kinematics_msgs/srv/pose.hpp"
 #include "peripheral_msgs/msg/bus_servo.hpp"
 #include "peripheral_msgs/srv/bus_servo_request.hpp"
+#include "peripheral_msgs/srv/buzzer_request.hpp"
+#include "peripheral_msgs/srv/led_request.hpp"
 
 /* ROS2 */
 #include <rclcpp/executors.hpp>
@@ -17,12 +18,12 @@
 #include <rclcpp/future_return_code.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/qos.hpp>
 
 /* STD */
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <rclcpp/qos.hpp>
 #include <vector>
 
 ///////////////////////////////
@@ -63,54 +64,72 @@ auto RobotController::set_servo_pos(std::vector<peripheral_msgs::msg::BusServo> 
     this->cli_servo->async_send_request(request);
 }
 
+auto RobotController::set_buzzer(const std::vector<peripheral_msgs::msg::Buzzer>& buzzers) -> void {
+    for (auto buzzer : buzzers) {
+        RCLCPP_INFO(
+            rclcpp::get_logger(""), 
+            "Published Buzzer State: freq=%d, on_duration=%.2f, off_duration=%.2f, repeat=%d",
+            buzzer.frequency,
+            buzzer.on_duration,
+            buzzer.off_duration,
+            buzzer.repeat_count
+        );
+    }
+
+    auto request = std::make_shared<peripheral_msgs::srv::BuzzerRequest::Request>();
+    request->buzzers = buzzers;
+
+    this->cli_buzzer->async_send_request(request);
+}
+
 
 auto RobotController::set_buzzer(peripheral_msgs::msg::BuzzerRequest::_frequency_type freq, 
                                  peripheral_msgs::msg::BuzzerRequest::_on_duration_type on_duration, 
-                                peripheral_msgs::msg::BuzzerRequest::_off_duration_type off_duration, 
-                                  peripheral_msgs::msg::BuzzerRequest::_repeat_count_type repeat_count) -> void 
+                                 peripheral_msgs::msg::BuzzerRequest::_off_duration_type off_duration, 
+                                 peripheral_msgs::msg::BuzzerRequest::_repeat_count_type repeat_count) -> void 
 {
-    auto msg = peripheral_msgs::msg::BuzzerRequest();
-    msg.frequency = freq;
-    msg.on_duration = on_duration;
-    msg.off_duration = off_duration;
-    msg.repeat_count= repeat_count;
+    auto buzzer = peripheral_msgs::msg::Buzzer();
+    buzzer.frequency = freq;
+    buzzer.on_duration = on_duration;
+    buzzer.off_duration = off_duration;
+    buzzer.repeat_count= repeat_count;
 
     // Send message
-    this->pub_buzzer->publish(msg);
-    RCLCPP_INFO(
-        rclcpp::get_logger(""), 
-        "Published Buzzer State: freq=%d, on_duration=%.2f, off_duration=%.2f, repeat=%d",
-        msg.frequency,
-        msg.on_duration,
-        msg.off_duration,
-        msg.repeat_count
-    );
+    set_buzzer({ buzzer });
 }
 
+auto RobotController::set_led(const std::vector<peripheral_msgs::msg::LED>& leds) -> void {
+    for (auto led : leds) {
+        RCLCPP_INFO(
+            rclcpp::get_logger(""), 
+            "LED ID: %d, On Duration: %.2fs, Off Duration: %.2fs, Repeat Count: %d", 
+            led.id,
+            led.on_duration,
+            led.off_duration,
+            led.repeat_count
+        );
+    }
+
+    // Create request
+    auto request = std::make_shared<peripheral_msgs::srv::LEDRequest::Request>();
+    request->leds = leds;
+
+    this->cli_led->async_send_request(request);
+}
+
+
 auto RobotController::set_led(peripheral_msgs::msg::LED::_id_type led_id, 
-                 decltype(peripheral_msgs::msg::LED::on_duration) on_duration, 
-                 decltype(peripheral_msgs::msg::LED::off_duration) off_duration, 
-                 decltype(peripheral_msgs::msg::LED::repeat_count) repeat_count) -> void
+                              peripheral_msgs::msg::LED::_on_duration_type on_duration, 
+                              peripheral_msgs::msg::LED::_off_duration_type off_duration, 
+                              peripheral_msgs::msg::LED::_repeat_count_type repeat_count) -> void
 {
     auto led = peripheral_msgs::msg::LED();
     led.id = led_id;
     led.on_duration = on_duration;
     led.off_duration = off_duration;
     led.repeat_count = repeat_count;
-
-    auto msg = peripheral_msgs::msg::LEDRequest();
-    msg.leds.emplace_back(led);
     
-    this->pub_led->publish(msg);
-
-    RCLCPP_INFO(
-        rclcpp::get_logger(""), 
-        "LED ID: %d, On Duration: %.2fs, Off Duration: %.2fs, Repeat Count: %d", 
-        led.id,
-        led.on_duration,
-        led.off_duration,
-        led.repeat_count
-    );
+    set_led({ led });
 }
 
 auto RobotController::test() -> void {
@@ -222,9 +241,6 @@ auto RobotController::initialize_board_controller() -> void {
     // Wait for board controller
     this->cli_board_controller_ready = this->create_client<std_srvs::srv::Trigger>("/board_controller/initialization_complete");
     this->cli_board_controller_ready->wait_for_service();
-
-    // Create a publisher for board controller
-    this->pub_packet = this->create_publisher<board_msgs::msg::Packet>("/board_controller/packet", 10);
 }
 
 auto RobotController::initialize_buzzer() -> void {
@@ -233,7 +249,7 @@ auto RobotController::initialize_buzzer() -> void {
     this->cli_buzzer_ready->wait_for_service();
 
     // Create a publisher for buzzer
-    this->pub_buzzer = this->create_publisher<peripheral_msgs::msg::BuzzerRequest>("/buzzer", 10);
+    this->cli_buzzer = this->create_client<peripheral_msgs::srv::BuzzerRequest>("/buzzer/request");
 }
 
 auto RobotController::initialize_led() -> void {
@@ -241,8 +257,7 @@ auto RobotController::initialize_led() -> void {
     this->cli_led_ready = this->create_client<std_srvs::srv::Trigger>("/led/initialization_complete");
     this->cli_led_ready->wait_for_service();
 
-    // Create a publisher for LED
-    this->pub_led = this->create_publisher<peripheral_msgs::msg::LEDRequest>("/led",10);
+    this->cli_led = this->create_client<peripheral_msgs::srv::LEDRequest>("/led/request");
 }
 
 auto RobotController::initialize_servos() -> void {
@@ -253,7 +268,10 @@ auto RobotController::initialize_servos() -> void {
     this->cli_servo_ready = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
     this->cli_servo_ready->wait_for_service();
 
-    // Create a client
+    // Create clients
+    this->cli_led = this->create_client<peripheral_msgs::srv::LEDRequest>("/led/request");
+    this->cli_led->wait_for_service();
+
     this->cli_servo = this->create_client<peripheral_msgs::srv::BusServoRequest>("/bus_servo/request");
     this->cli_servo->wait_for_service();
 

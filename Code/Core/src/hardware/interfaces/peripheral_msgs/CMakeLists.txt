@@ -12,11 +12,11 @@ find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/BusServo.msg"
-    "msg/BusServoRequest.msg"
-    "msg/BuzzerRequest.msg"
+    "msg/Buzzer.msg"
     "msg/LED.msg"
-    "msg/LEDRequest.msg"
     "srv/BusServoRequest.srv"
+    "srv/BuzzerRequest.srv"
+    "srv/LEDRequest.srv"
     DEPENDENCIES std_msgs
 )
 

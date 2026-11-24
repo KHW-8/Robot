@@ -7,6 +7,7 @@
 #include <rclcpp/executors.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/utilities.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include "sensor_msgs/msg/camera_info.hpp"
 #include <std_msgs/msg/header.hpp>
@@ -237,7 +238,7 @@ void Camera::start() {
 
     publish_camera_info();
 
-    while (true) 
+    while (rclcpp::ok()) 
         publish_images();
 }
 

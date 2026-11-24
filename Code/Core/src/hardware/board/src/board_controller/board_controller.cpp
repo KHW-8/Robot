@@ -371,12 +371,7 @@ auto BoardController::initialize() -> void {
         return;
     }
 
-    // Create subscription of packet
-    this->srv_packet = this->create_service<board_msgs::srv::Packet>(
-        "~/packet",
-        std::bind(&BoardController::handle_request, this, std::placeholders::_1, std::placeholders::_2)
-    );
-
+    // Create subscription
     this->sub_buzzer = this->create_subscription<board_msgs::msg::Packet>(
         "/buzzer/packet",
         10,
@@ -387,6 +382,12 @@ auto BoardController::initialize() -> void {
         "/led/packet",
         10,
         std::bind(&BoardController::handle_packet, this, std::placeholders::_1)
+    );
+
+    // Create service about packet
+    this->srv_packet = this->create_service<board_msgs::srv::Packet>(
+        "~/packet",
+        std::bind(&BoardController::handle_request, this, std::placeholders::_1, std::placeholders::_2)
     );
 
     // Complete initialization and notify all other nodes
@@ -420,7 +421,7 @@ auto BoardController::handle_request(const std::shared_ptr<board_msgs::srv::Pack
     // Wait for response
     auto start = std::chrono::system_clock::now();
 
-    while (true) {
+    while (rclcpp::ok()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
         auto it = packet_map.find(request_id);
