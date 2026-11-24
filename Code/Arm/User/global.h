@@ -1,8 +1,6 @@
 #ifndef GLOBAL_H_
 #define GLOBAL_H_
 
-#define PACKET_HEADER_COUNT 2
-#define PACKET_HEADER 0x55
 
 typedef enum {
     ERR = -1,

@@ -15,6 +15,7 @@ typedef enum {
 } BusServoTaskState;
 
 typedef struct {
+    uint16_t request_id;
     uint8_t cmd;
     uint8_t servo_count;
     bool read_only;
