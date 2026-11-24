@@ -3,21 +3,26 @@
 
 //////////* Headers *//////////
 
-// Boost
+/* Boost */
 #include <boost/asio/serial_port.hpp>
-// ROS2
-#include <cstdint>
-#include <rclcpp/node.hpp>
-#include <std_srvs/srv/trigger.hpp>
-#include <vector>
-// Board BoardController Message
+
+/* Core */
 #include "board_msgs/msg/packet.hpp"
+#include "board_msgs/srv/packet.hpp"
+
+/* ROS2 */
+#include <rclcpp/node.hpp>
+#include <rclcpp/publisher.hpp>
+#include <std_srvs/srv/trigger.hpp>
+
+/* STD */
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 ///////////////////////////////
 
 ///////////* Macros *///////////
-
-#define PACKET_HEADER 0x55
 
 ////////////////////////////////
 
@@ -39,31 +44,36 @@ private:
     // Check
     auto check_packet(const std::vector<uint8_t>& packet) -> std::pair<bool, bool>; // <isReceiving, haveError>
 
-    // Checksum
+    // Generate
+    auto generate_request_id(const std::vector<uint8_t>& vector) -> uint16_t;
     auto generate_checksum(const std::vector<uint8_t>& vector) -> uint8_t;
 
     // Initialization
     auto initialize() -> void;
 
     // Handle
-    auto handle_packet(const std::vector<uint8_t>& packet) -> void;
+    auto handle_request(const std::shared_ptr<board_msgs::srv::Packet::Request> request, const std::shared_ptr<board_msgs::srv::Packet::Response> response) -> void;
+    auto handle_packet(const board_msgs::msg::Packet& msg) -> void;
 
     // Transmit / Receive
-    auto transmit(const std::vector<uint8_t>& vector_data) -> void;
-    auto receive() -> void;
-    auto receive_packet(const board_msgs::msg::Packet& msg) -> void;
-    auto receive_packet_from_board() -> void;
-    auto receive_msg_from_board() -> void;
+    auto transmit(const std::vector<uint8_t>& data) -> void;
+    auto receive_board_packet() -> void;
+    auto receive_msg() -> void;
+
+    // Store
+    auto store_board_packet(const std::vector<uint8_t>& packet) -> void;
 
 private:
+    // Request queue
+    std::map<uint16_t, std::vector<uint8_t> > packet_map; // <Request ID, Packet>
+
     // Subscription
-    rclcpp::Subscription<board_msgs::msg::Packet>::SharedPtr sub_bus_servo;
     rclcpp::Subscription<board_msgs::msg::Packet>::SharedPtr sub_buzzer;
     rclcpp::Subscription<board_msgs::msg::Packet>::SharedPtr sub_led;
 
-
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
+    rclcpp::Service<board_msgs::srv::Packet>::SharedPtr srv_packet;
 
     // Serial port
     boost::asio::io_context io;

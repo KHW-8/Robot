@@ -30,8 +30,7 @@ add_executable(bus_servo src/bus_servo/bus_servo.cpp)
 
 target_include_directories(bus_servo PUBLIC
     ${CMAKE_SOURCE_DIR}/include/bus_servo
-    ${CMAKE_SOURCE_DIR}/include/peripheral
-    ${CMAKE_SOURCE_DIR}/include/global
+    ${CMAKE_SOURCE_DIR}/../global/include
 )
 
 target_link_libraries(bus_servo PUBLIC
@@ -48,8 +47,7 @@ add_executable(buzzer src/buzzer/buzzer.cpp)
 
 target_include_directories(buzzer PUBLIC
     ${CMAKE_SOURCE_DIR}/include/buzzer
-    ${CMAKE_SOURCE_DIR}/include/peripheral
-    ${CMAKE_SOURCE_DIR}/include/global
+    ${CMAKE_SOURCE_DIR}/../global/include
 )
 
 target_link_libraries(buzzer PUBLIC
@@ -93,8 +91,7 @@ add_executable(led src/led/led.cpp)
 
 target_include_directories(led PUBLIC
     ${CMAKE_SOURCE_DIR}/include/led
-    ${CMAKE_SOURCE_DIR}/include//peripheral
-    ${CMAKE_SOURCE_DIR}/include/global
+    ${CMAKE_SOURCE_DIR}/../global/include
 )
 
 target_link_libraries(led PUBLIC

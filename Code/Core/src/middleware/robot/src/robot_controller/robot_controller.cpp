@@ -9,9 +9,11 @@
 #include "gui_msgs/msg/command.hpp"
 #include "kinematics_msgs/srv/pose.hpp"
 #include "peripheral_msgs/msg/bus_servo.hpp"
+#include "peripheral_msgs/srv/bus_servo_request.hpp"
 
 /* ROS2 */
 #include <rclcpp/executors.hpp>
+#include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <rclcpp/future_return_code.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
@@ -20,6 +22,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <rclcpp/qos.hpp>
 #include <vector>
 
 ///////////////////////////////
@@ -32,30 +35,9 @@ RobotController::RobotController()
     initialize();
 }
 
-auto RobotController::read_servo_pos(const std::vector<decltype(peripheral_msgs::msg::BusServo::id)>& ids) -> void {
-   // Create request
-    auto request = peripheral_msgs::msg::BusServoRequest();
-    request.cmd = static_cast<uint8_t>(BusServoCMD::READ_ANGLE);
-    request.query_only = true;
-
-    for (const auto& id : ids) {
-        // Generate servo message
-        auto servo = peripheral_msgs::msg::BusServo();
-        servo.id = id;
-
-        request.servos.emplace_back(servo);
-    }
-
-    this->pub_servo->publish(request);
-
-    // Print log
-    for (const auto& servo : request.servos) 
-        RCLCPP_INFO(rclcpp::get_logger(""), "Servo Id: %d", servo.id);
-}
-
-auto RobotController::set_servo_pos(const decltype(peripheral_msgs::msg::BusServo::id)& id, 
-                       const decltype(peripheral_msgs::msg::BusServo::angle)& angle, 
-                       const decltype(peripheral_msgs::msg::BusServo::duration)& duration) -> void 
+auto RobotController::set_servo_pos(const peripheral_msgs::msg::BusServo::_id_type& id, 
+                                    const peripheral_msgs::msg::BusServo::_angle_type& angle, 
+                                    const peripheral_msgs::msg::BusServo::_duration_type& duration) -> void 
 {
     auto servo = peripheral_msgs::msg::BusServo();
     servo.id = id;
@@ -68,25 +50,24 @@ auto RobotController::set_servo_pos(const decltype(peripheral_msgs::msg::BusServ
 
 auto RobotController::set_servo_pos(std::vector<peripheral_msgs::msg::BusServo> servos_pos) -> void
 {
-    // Generate servo message
-    auto request = peripheral_msgs::msg::BusServoRequest();
-    request.cmd = static_cast<uint8_t>(BusServoCMD::SET_ROTAION_ANGLE_AND_DURATION);
-    request.query_only = false;
-    request.servos = servos_pos;
-
-    // Send message
-    this->pub_servo->publish(request);
-
     // Print log
-    for (const auto& servo : request.servos) 
+    for (const auto& servo : servos_pos) 
         RCLCPP_INFO(rclcpp::get_logger(""), "Servo Id: %d, Angle: %d°, Duration: %.2fs", servo.id, servo.angle, servo.duration);
+
+    // Generate servo message
+    auto request = std::make_shared<peripheral_msgs::srv::BusServoRequest::Request>();
+    request->cmd = static_cast<uint8_t>(BusServoCMD::SET_ROTAION_ANGLE_AND_DURATION);
+    request->servos = servos_pos;
+
+    // Send request
+    this->cli_servo->async_send_request(request);
 }
 
 
-auto RobotController::set_buzzer(decltype(peripheral_msgs::msg::BuzzerRequest::frequency) freq, 
-                                decltype(peripheral_msgs::msg::BuzzerRequest::on_duration) on_duration, 
-                                decltype(peripheral_msgs::msg::BuzzerRequest::off_duration) off_duration, 
-                                decltype(peripheral_msgs::msg::BuzzerRequest::repeat_count) repeat_count) -> void 
+auto RobotController::set_buzzer(peripheral_msgs::msg::BuzzerRequest::_frequency_type freq, 
+                                 peripheral_msgs::msg::BuzzerRequest::_on_duration_type on_duration, 
+                                peripheral_msgs::msg::BuzzerRequest::_off_duration_type off_duration, 
+                                  peripheral_msgs::msg::BuzzerRequest::_repeat_count_type repeat_count) -> void 
 {
     auto msg = peripheral_msgs::msg::BuzzerRequest();
     msg.frequency = freq;
@@ -106,7 +87,7 @@ auto RobotController::set_buzzer(decltype(peripheral_msgs::msg::BuzzerRequest::f
     );
 }
 
-auto RobotController::set_led(decltype(peripheral_msgs::msg::LED::id) led_id, 
+auto RobotController::set_led(peripheral_msgs::msg::LED::_id_type led_id, 
                  decltype(peripheral_msgs::msg::LED::on_duration) on_duration, 
                  decltype(peripheral_msgs::msg::LED::off_duration) off_duration, 
                  decltype(peripheral_msgs::msg::LED::repeat_count) repeat_count) -> void
@@ -153,15 +134,57 @@ auto RobotController::test() -> void {
         return;
     }
 
-    auto res = future.get();
-    if (!res->success) {
+    auto response = future.get();
+    if (!response->success) {
         RCLCPP_INFO(rclcpp::get_logger(""), "No solutions.");
         return;
     }
 
     uint8_t i = 2;
-    for (const auto& e : res->servo_angles) 
+    for (const auto& e : response->servo_angles) 
         RCLCPP_INFO(rclcpp::get_logger(""), "Servo %d Angle: %f", i++, e);
+}
+
+auto RobotController::read_servo_pos(const std::vector<peripheral_msgs::msg::BusServo::_id_type>& ids) -> void {
+    // Create request
+    auto request = std::make_shared< peripheral_msgs::srv::BusServoRequest::Request>();
+    request->cmd = static_cast<uint8_t>(BusServoCMD::READ_ANGLE);
+
+    for (const auto& id : ids) {
+        // Generate servo message
+        auto servo = peripheral_msgs::msg::BusServo();
+        servo.id = id;
+        
+        request->servos.emplace_back(servo);
+    }
+    
+    // Print request
+    for (const auto& servo : request->servos) 
+        RCLCPP_INFO(rclcpp::get_logger(""), "Servo Id: %d", servo.id);
+
+
+    // Send request
+    auto future = this->cli_servo->async_send_request(request);
+
+    // Wait for response
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), future) != rclcpp::FutureReturnCode::SUCCESS) {
+         RCLCPP_ERROR(
+            rclcpp::get_logger(""), 
+            "File: %s, Function: %s, Line: %d, Error: Service call failed.", 
+            __FILE__, 
+            __FUNCTION__,
+            __LINE__
+        );
+
+        return;
+    }
+
+    // Get response
+    auto response = future.get();
+
+    // Print response
+    for (const auto& servo : response->servos) 
+        RCLCPP_INFO(rclcpp::get_logger(""), "Servo Id: %d, Angle: %d", servo.id, servo.angle);
 }
 
 
@@ -223,12 +246,16 @@ auto RobotController::initialize_led() -> void {
 }
 
 auto RobotController::initialize_servos() -> void {
-    // Wait for servo
-    this->cli_sevo_ready = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
-    this->cli_sevo_ready->wait_for_service();
+    // Create callback group
+    this->cli_servo_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-    // Create a publisher for servo 
-    this->pub_servo = this->create_publisher<peripheral_msgs::msg::BusServoRequest>("/bus_servo", 10);
+    // Wait for servo
+    this->cli_servo_ready = this->create_client<std_srvs::srv::Trigger>("/bus_servo/initialization_complete");
+    this->cli_servo_ready->wait_for_service();
+
+    // Create a client
+    this->cli_servo = this->create_client<peripheral_msgs::srv::BusServoRequest>("/bus_servo/request");
+    this->cli_servo->wait_for_service();
 
     // Set servos' positions
     std::vector<peripheral_msgs::msg::BusServo> servos_positions = {

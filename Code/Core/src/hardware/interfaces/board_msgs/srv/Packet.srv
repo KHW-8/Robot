@@ -1,0 +1,5 @@
+bool tx_only
+uint8 peripheral_id
+uint8[] data
+---
+uint8[] data

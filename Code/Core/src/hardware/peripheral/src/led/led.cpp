@@ -29,7 +29,7 @@ auto LED::set(const peripheral_msgs::msg::LEDRequest& request) -> void {
     // Peripheral ID
     packet.peripheral_id = static_cast<uint8_t>(Peripheral::LED);
     // LED count
-    packet.array_data.emplace_back(request.leds.size());
+    packet.data.emplace_back(request.leds.size());
     // LED information
     for (const auto& led : request.leds) {
         RCLCPP_INFO(
@@ -46,10 +46,10 @@ auto LED::set(const peripheral_msgs::msg::LEDRequest& request) -> void {
         const auto& off_duration = to_byte_vector<decltype(led.off_duration)>(led.off_duration); 
         const auto& repeat_count = to_byte_vector<decltype(led.repeat_count)>(led.repeat_count);
 
-        packet.array_data.emplace_back(led.id);
-        packet.array_data.insert(packet.array_data.end(), on_duration.begin(), on_duration.end()); 
-        packet.array_data.insert(packet.array_data.end(), off_duration.begin(), off_duration.end()); 
-        packet.array_data.insert(packet.array_data.end(), repeat_count.begin(), repeat_count.end()); 
+        packet.data.emplace_back(led.id);
+        packet.data.insert(packet.data.end(), on_duration.begin(), on_duration.end()); 
+        packet.data.insert(packet.data.end(), off_duration.begin(), off_duration.end()); 
+        packet.data.insert(packet.data.end(), repeat_count.begin(), repeat_count.end()); 
     }
 
     this->pub_board_controller->publish(packet);

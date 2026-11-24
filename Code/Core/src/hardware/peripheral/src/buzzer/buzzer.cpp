@@ -41,13 +41,13 @@ auto Buzzer::set(const peripheral_msgs::msg::BuzzerRequest& request) -> void {
     // Peripheral ID
     packet.peripheral_id = static_cast<uint8_t>(Peripheral::BUZZER);
     // Frequency
-    packet.array_data.insert(packet.array_data.end(), freq.begin(), freq.end()); 
+    packet.data.insert(packet.data.end(), freq.begin(), freq.end()); 
     // On duration
-    packet.array_data.insert(packet.array_data.end(), on_duration.begin(), on_duration.end()); 
+    packet.data.insert(packet.data.end(), on_duration.begin(), on_duration.end()); 
     // Off duration
-    packet.array_data.insert(packet.array_data.end(), off_duration.begin(), off_duration.end()); 
+    packet.data.insert(packet.data.end(), off_duration.begin(), off_duration.end()); 
     // Repeat count
-    packet.array_data.insert(packet.array_data.end(), repeat_count.begin(), repeat_count.end()); 
+    packet.data.insert(packet.data.end(), repeat_count.begin(), repeat_count.end()); 
 
     this->pub_board_controller->publish(packet);
 }

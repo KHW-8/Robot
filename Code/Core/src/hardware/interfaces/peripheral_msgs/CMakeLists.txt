@@ -16,6 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/BuzzerRequest.msg"
     "msg/LED.msg"
     "msg/LEDRequest.msg"
+    "srv/BusServoRequest.srv"
     DEPENDENCIES std_msgs
 )
 

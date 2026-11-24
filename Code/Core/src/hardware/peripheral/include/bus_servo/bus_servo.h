@@ -3,14 +3,23 @@
 
 ///////////////* Headers *///////////////
 
+/* Core */
+//// Hardware
+/// Interfaces
+#include "peripheral_msgs/msg/bus_servo.hpp"
+#include "peripheral_msgs/srv/bus_servo_request.hpp"
+#include "board_msgs/srv/packet.hpp"
+
 /* ROS2 */
+#include <cstdint>
+#include <rclcpp/callback_group.hpp>
 #include <rclcpp/client.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/service.hpp>
+#include <rclcpp/subscription.hpp>
+#include <rclcpp/timer.hpp>
 #include <std_srvs/srv/trigger.hpp>
-/* Core */
-//// Message
-#include "board_msgs/msg/packet.hpp"
-#include "peripheral_msgs/msg/bus_servo_request.hpp"
+#include <vector>
 
 /////////////////////////////////////////
 
@@ -70,6 +79,11 @@ enum class BusServoCMD {
     READ_DISTANCE = 48
 };
 
+enum RequestResult {
+    OK,
+    ERROR
+};
+
 ///////////////////////////////////////////////////////
 
 ////////////////////* Classes *////////////////////
@@ -79,32 +93,31 @@ public:
     BusServo();
     
 public:
-    auto read_pos(const peripheral_msgs::msg::BusServoRequest& request) -> void;
-    auto set_pos(const peripheral_msgs::msg::BusServoRequest& request) -> void;
+    auto read_pos(const std::vector<peripheral_msgs::msg::BusServo::_id_type>& servo_ids) -> std::vector<peripheral_msgs::msg::BusServo>;
+    auto set_pos(const std::vector<peripheral_msgs::msg::BusServo>& servos) -> void;
 
 private:
     // Callback
-    auto initialization_complete([[maybe_unused]]const std::shared_ptr<std_srvs::srv::Trigger::Request> request, const std::shared_ptr<std_srvs::srv::Trigger::Response> response) -> void;
-
+    auto initialization_complete([[maybe_unused]]const std_srvs::srv::Trigger::Request::SharedPtr& request, const std_srvs::srv::Trigger::Response::SharedPtr& response) -> void;
+    auto handle_request(const peripheral_msgs::srv::BusServoRequest::Request::SharedPtr& request, const peripheral_msgs::srv::BusServoRequest::Response::SharedPtr& response) -> void;
+    
     // Handle
-    auto handle_request(const peripheral_msgs::msg::BusServoRequest& request) -> void;
+    auto handle_packet(const std::vector<uint8_t>& packet) -> std::vector<peripheral_msgs::msg::BusServo>;
 
     // Initialization
     void initialize();
 
 private:
+    // Callback group
+    rclcpp::CallbackGroup::SharedPtr cli_board_controller_cb_group;
+
     // Client
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr cli_board_controller_ready;
-
-    // Publisher
-    rclcpp::Publisher<board_msgs::msg::Packet>::SharedPtr pub_board_controller;
-
-    // Subscription
-    rclcpp::Subscription<peripheral_msgs::msg::BusServoRequest>::SharedPtr sub_robot_controller;
+    rclcpp::Client<board_msgs::srv::Packet>::SharedPtr cli_board_controller;
 
     // Service
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_ini;
-
+    rclcpp::Service<peripheral_msgs::srv::BusServoRequest>::SharedPtr srv_request;
 };
 
 /////////////////////////////////////////////////////

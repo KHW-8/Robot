@@ -11,6 +11,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem)
 
 # Core
 find_package(board_msgs REQUIRED)
+find_package(peripheral_msgs REQUIRED)
 # ROS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -35,6 +36,7 @@ add_executable(board_controller
 
 target_include_directories(board_controller PRIVATE
     ${CMAKE_SOURCE_DIR}/include/board_controller
+    ${CMAKE_SOURCE_DIR}/../global/include
 )
 
 target_link_libraries(board_controller PUBLIC
@@ -42,6 +44,7 @@ target_link_libraries(board_controller PUBLIC
     Boost::filesystem
     # Core
     board_msgs::board_msgs
+    peripheral_msgs::peripheral_msgs
     # ROS
     rclcpp::rclcpp
     std_srvs::std_srvs
